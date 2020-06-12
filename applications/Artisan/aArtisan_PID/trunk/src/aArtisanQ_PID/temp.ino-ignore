@@ -1,3 +1,4 @@
+
 // aArtisanQ_PID.ino
 // ------------
 
@@ -503,8 +504,8 @@ void logger()
 #ifdef ANDROID
 
   // print counter
-  //Serial.print( counter );
-  //Serial.print( F(",") );
+  //Serial.print( counter);
+  //Serial.print( F(","));
 
   // print ambient
   Serial.print(convertUnits(AT), DP);
@@ -602,6 +603,27 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
 };
 
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
+void lcd.print(const __FlashStringHelper *str)
+{
+  Serial.print(str);
+  lcd.print(str);
+}
+void lcd.print(double str)
+{
+  Serial.print(str);
+  lcd.print(str);
+}
+void lcd.print(const char *str)
+{
+  Serial.print(str);
+  lcd.print(str);
+}
+void lcd.println(const __FlashStringHelper *str)
+{
+  Serial.println(str);
+  lcd.println(str);
+}
+
 void lcdSetCursor(int x, int y)
 {
 #ifdef OLED_I2C // Should match the scale of font selected for OLED
@@ -617,6 +639,7 @@ void lcdSetCursor(int x, int y)
 void updateLCD()
 {
 
+  Serial.println(F("Updating LCD"));
   if (LCD_mode == 0)
   { // Display normal LCD screen
 
@@ -653,19 +676,19 @@ void updateLCD()
         sprintf(st1, "%4d", it01);
         if (j == 1)
         {
-#ifdef LCD_8x16
-          lcdSetCursor(0, 4);
-#else
+#ifdef LCD_4x20
           lcdSetCursor(13, 0);
+#else
+          lcdSetCursor(0, 4);
 #endif
           lcd.print(F("ET"));
         }
         else
         {
-#ifdef LCD_8x16
-          lcdSetCursor(0, 5);
-#else
+#ifdef LCD_4x20
           lcdSetCursor(13, 1);
+#else
+          lcdSetCursor(0, 5);
 #endif
           lcd.print(F("BT"));
         }
@@ -715,7 +738,7 @@ void updateLCD()
       lcdSetCursor(13, 2);
       lcd.print(F("       ")); // blank out SP: nnn if PID is off
                                //#else
-                               //    lcdSetCursor( 0, 2 );
+                               //    lcdSetCursor( 0, 2);
                                //    lcd.print(F("                    ")); // blank out PID: nnn% and SP: nnn if PID is off and ANALOGUE1 isn't defined
                                //#endif // end ifdef ANALOGUE1
     }
@@ -873,7 +896,7 @@ void updateLCD()
   { // Display alternative 1 LCD display
 
 #ifdef PID_CONTROL
-#if defined LCD_4x20 || defined LCD_8x16
+#ifdef LCD_4x20 || defined LCD_8x16
     lcdSetCursor(0, 0);
     for (int i = 0; i < 20; i++)
     {
@@ -1520,8 +1543,11 @@ void setup()
 
   BACKLIGHT;
   lcdSetCursor(0, 0);
+  lcd.drawString(0, 0, "Hello Paul");
   lcd.print(BANNER_ARTISAN); // display version banner
+  lcd.refreshDisplay();
   lcdSetCursor(0, 1);
+
 #ifdef ANDROID
   lcd.print(F("ANDROID")); // display version banner
 #endif                     // ANDROID
@@ -1619,7 +1645,9 @@ void setup()
   ci.addCommand(&ot2);
   ci.addCommand(&ot1);
   ci.addCommand(&reader);
+#ifdef PID_CONTROL
   ci.addCommand(&pid);
+#endif
   ci.addCommand(&reset);
 #ifdef ROASTLOGGER
   ci.addCommand(&load);
@@ -1755,6 +1783,8 @@ void loop()
 
   // Update LCD if defined
   Serial.println(F("In loop"));
+  lcd.drawString(0, 0, "In loop");
+  lcd.refreshDisplay();
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
   updateLCD();
 #endif
@@ -1765,7 +1795,7 @@ void loop()
 #endif
 
   // check if temp reads has taken longer than looptime. If so add 1 to counter + increase next looptime
-  // Serial.println( next_loop_time - millis() ); // how much time spare in loop. approx 350ms
+  // Serial.println( next_loop_time - millis()); // how much time spare in loop. approx 350ms
   if (millis() > next_loop_time)
   {
     counter = counter + (looptime / 1000);
