@@ -77,7 +77,7 @@
 ////////////////////
 // Analogue inputs (optional)
 // Comment out if not required
-//#define ANALOGUE1 // if potentiometer connected on ANLG1
+#define ANALOGUE1 // if potentiometer connected on ANLG1
 //#define ANALOGUE2 // if potentiometer connected on ANLG2
 
 ////////////////////
