@@ -455,6 +455,7 @@ void logger()
   }
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
+#ifdef PID_CONTROL
   if (myPID.GetMode() != MANUAL)
   { // If PID in AUTOMATIC mode
     Serial.print(F(","));
@@ -465,6 +466,7 @@ void logger()
     Serial.print(F(","));
     Serial.print(0); // send 0 if PID is off
   }
+#endif
 
   Serial.println();
 
@@ -1619,7 +1621,9 @@ void setup()
   ci.addCommand(&ot2);
   ci.addCommand(&ot1);
   ci.addCommand(&reader);
+#ifdef PID_CONTROL
   ci.addCommand(&pid);
+#endif
   ci.addCommand(&reset);
 #ifdef ROASTLOGGER
   ci.addCommand(&load);
