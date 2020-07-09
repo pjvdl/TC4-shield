@@ -726,8 +726,8 @@ boolean pidCmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "SV") == 0)
     {
       SV = atof(pars->paramStr(2));
-#ifdef ACKS_ON
-      Serial.print(F("# PID setpoint = "));
+#if defined ACKS_ON && defined PID_CONTROL
+      Serial.print(F("# PID setpoint = DO NOT KNOW!"));
       Serial.println(Setpoint);
 #endif
       return true;

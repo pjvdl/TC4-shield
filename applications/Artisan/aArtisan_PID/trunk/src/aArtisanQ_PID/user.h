@@ -77,7 +77,7 @@
 ////////////////////
 // Analogue inputs (optional)
 // Comment out if not required
-#define ANALOGUE1 // if potentiometer connected on ANLG1
+//#define ANALOGUE1 // if potentiometer connected on ANLG1
 //#define ANALOGUE2 // if potentiometer connected on ANLG2
 
 ////////////////////
@@ -115,13 +115,14 @@
 #define MAX_IO3 100 // Set output % for upper limit for IO3
 
 // cut power to Heater if fan duty is less than HTR_CUTOFF_FAN_VAL (to protect heater in air roaster). Set to 0 for no cutoff
-#define HTR_CUTOFF_FAN_VAL 0
+#define HTR_CUTOFF_FAN_VAL 30
+#define HTR_CUTOFF_FAN_RAMP 1 // Ramp heater so that heat % cannot exceed fan %
 
 #define FAN_AUTO_COOL 100 // Set fan output duty for auto cool when using PID;STOP command
 
 ////////////////////
 // Command Echo
-//#define COMMAND_ECHO // Echo all serial commands to LCD for debugging
+#define COMMAND_ECHO // Echo all serial commands to LCD for debugging
 
 ////////////////////
 // Temperature Reading Filters
@@ -153,11 +154,11 @@
 // When NOT using PHASE_ANGLE_CONTROL option
 // choose one of the following for the PWM time base for heater output on OT1 or OT2
 //#define TIME_BASE pwmN4sec  // recommended for Hottop D which has mechanical relay
-//#define TIME_BASE pwmN2sec
-//#define TIME_BASE pwmN1Hz // recommended for most electric heaters controlled by standard SSR
+#define TIME_BASE pwmN2sec
+// #define TIME_BASE pwmN1Hz // recommended for most electric heaters controlled by standard SSR
 //#define TIME_BASE pwmN2Hz
 // #define TIME_BASE pwmN4Hz
-#define TIME_BASE pwmN8Hz
+//#define TIME_BASE pwmN8Hz
 // The faster frequencies below are for advanced users only, and will require changes to the PWM16 Library
 //#define TIME_BASE 15 // approx. 977 Hz
 //#define TIME_BASE 7 // approx. 1.95kHz
@@ -170,7 +171,7 @@
 //#define MEMORY_CHK
 
 // This turns on the "# xxxxxxx\n" acknowledgements after commands
-//#define ACKS_ON
+ #define ACKS_ON
 
 ////////////////////
 // Output Pin Setup

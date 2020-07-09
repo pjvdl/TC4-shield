@@ -135,6 +135,7 @@ extern void logger();
 extern boolean Cscale;
 extern uint8_t actv[NC];
 #ifdef PID_CONTROL
+extern double Setpoint;
 extern PID myPID;
 #endif
 extern uint32_t counter;

@@ -7,7 +7,9 @@
                 "/home/paul/Downloads/arduino-1.8.12/hardware/tools/**",
                 "/home/paul/Downloads/arduino-1.8.12/hardware/arduino/avr/**",
                 "/home/paul/Arduino/libraries/**",
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "/media/data/home/paul/bin/arduino-1.8.13/hardware/arduino/avr/**",
+                "/media/data/home/paul/bin/arduino-1.8.13/tools/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
@@ -15,7 +17,8 @@
             "cppStandard": "gnu++14",
             "intelliSenseMode": "${default}",
             "forcedInclude": [
-                "/home/paul/Downloads/arduino-1.8.12/hardware/arduino/avr/cores/arduino/Arduino.h"
+                "/home/paul/Downloads/arduino-1.8.12/hardware/arduino/avr/cores/arduino/Arduino.h",
+                "/media/data/home/paul/bin/arduino-1.8.13/hardware/arduino/avr/cores/arduino/Arduino.h"
             ]
         }
     ],

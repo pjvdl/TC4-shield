@@ -445,14 +445,7 @@ void logger()
   }
 
   Serial.print(F(","));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.print(0);
-  }
-  else
-  {
-    Serial.print(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
 #ifdef PID_CONTROL
@@ -490,14 +483,7 @@ void logger()
     }
   }
   Serial.print(F("Power%="));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.println(0);
-  }
-  else
-  {
-    Serial.println(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F("Fan="));
   Serial.print(FAN_DUTY);
 #endif
@@ -526,14 +512,7 @@ void logger()
 
   //#ifdef PLOT_POWER
   Serial.print(F(","));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.print(0);
-  }
-  else
-  {
-    Serial.print(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
   //#endif
@@ -696,14 +675,7 @@ void updateLCD()
     { // if PID is on then display PID: nnn% instead of OT1:
       lcdSetCursor(0, 2);
       lcd.print(F("PID:"));
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%4d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%4d", (int)HEATER_DUTY);
-      }
+      sprintf(st1, "%4d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
 
@@ -736,14 +708,7 @@ void updateLCD()
     { // only display OT2: nnn% if PID is off so PID display isn't overwriten
       lcdSetCursor(0, 2);
       lcd.print(F("HTR:"));
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%4d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%4d", (int)HEATER_DUTY);
-      }
+      sprintf(st1, "%4d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
     }
@@ -751,14 +716,7 @@ void updateLCD()
 #else  // if PID_CONTROL isn't defined then always display OT1: nnn%
     lcdSetCursor(0, 2);
     lcd.print(F("HTR:"));
-    if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-    { // display 0% if OT1 has been cut off
-      sprintf(st1, "%4d", (int)0);
-    }
-    else
-    {
-      sprintf(st1, "%4d", (int)HEATER_DUTY);
-    }
+    sprintf(st1, "%4d", (int)getHeaterDuty());
     lcd.print(st1);
     lcd.print(F("%"));
 #endif // end ifdef PID_CONTROL \
@@ -812,15 +770,8 @@ void updateLCD()
     if (myPID.GetMode() != MANUAL)
     {
       lcdSetCursor(0, 1);
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        lcd.print(F("  0"));
-      }
-      else
-      {
-        sprintf(st1, "%3d", (int)HEATER_DUTY);
-        lcd.print(st1);
-      }
+      sprintf(st1, "%3d", (int)getHeaterDuty());
+      lcd.print(st1);
       lcd.print(F("%"));
       sprintf(st1, "%4d", (int)Setpoint);
       lcd.print(st1);
@@ -845,14 +796,7 @@ void updateLCD()
       lcdSetCursor(0, 1);
       lcd.print(F("HTR:     "));
       lcdSetCursor(4, 1);
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%3d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%3d", (int)HEATER_DUTY);
-      }
+      sprintf(st1, "%3d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
     }
@@ -1003,6 +947,8 @@ void readAnlg1()
 #else // PWM Mode
     levelOT1 = reading;
     outOT1();
+    Serial.print(F("Updating OT1 (heater) with new analogue value "));
+    Serial.println(levelOT1, DEC);
 #endif
   }
   else
@@ -1028,6 +974,8 @@ void readAnlg2()
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
+    Serial.print(F("Updating IO3 (fan) with new analogue value "));
+    Serial.println(levelIO3, DEC);
     outIO3(); // update fan output on IO3
 #endif
   }
@@ -1221,7 +1169,12 @@ void outOT1()
 #ifdef IO3_HTR_PAC // OT1 not cutoff by fan duty in IO3_HTR_PAC mode
   new_levelot1 = levelOT1;
 #else
-  if (levelOT2 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * HTR_CUTOFF_FAN_RAMP;
+    new_levelot1 = min(levelOT1, maxHeaterDuty);
+  }
+  else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
   {
     new_levelot1 = 0;
   }
@@ -1232,7 +1185,12 @@ void outOT1()
 #endif
   output_level_icc(new_levelot1);
 #else // PWM Mode
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * HTR_CUTOFF_FAN_RAMP;
+    new_levelot1 = min(levelOT1, maxHeaterDuty);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   {
     new_levelot1 = 0;
   }
@@ -1241,6 +1199,8 @@ void outOT1()
     new_levelot1 = levelOT1;
   }
   ssr.Out(new_levelot1, levelOT2);
+  Serial.print(F("Setting HEATER_DUTY (OT1) to "));
+  Serial.println(new_levelot1);
 #endif
 }
 
@@ -1256,18 +1216,41 @@ void outOT2()
 #endif
   output_level_pac(levelOT2);
 #else // PWM Mode
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = min(levelOT1, levelIO3 * HTR_CUTOFF_FAN_RAMP);
+    ssr.Out(maxHeaterDuty, levelOT2);
+    Serial.print(F("Heater limited to max of FAN_DUTY * RAMP"));
+    Serial.println(maxHeaterDuty);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater
     ssr.Out(0, levelOT2);
+    Serial.println(F("Heater cutoff for low fan (outOT2)"));
   }
   else
   { // turn OT1 and OT2 back on again if levelIO3 is above cutoff value.
     ssr.Out(levelOT1, levelOT2);
+    Serial.println(F("Heater back on for low fan (outOT2)"));
   }
 #endif
 }
 
 #if (!defined(CONFIG_PAC3)) // completely disable outIO3 if using CONFIG_PAC3 mode (uses IO3 for interrupt)
+uint8_t getHeaterDuty()
+{
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * HTR_CUTOFF_FAN_RAMP;
+    return min(HEATER_DUTY, maxHeaterDuty);
+  }
+  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
+  { // send 0 if OT1 has been cut off
+    return 0;
+  }
+  return HEATER_DUTY;
+}
+
 // ----------------------------------
 void outIO3()
 { // update output for IO3
@@ -1278,7 +1261,11 @@ void outIO3()
   uint8_t new_levelio3;
   new_levelio3 = levelIO3;
 #ifdef IO3_HTR_PAC
-  if (levelOT2 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    new_levelio3 = min(new_levelio3, levelOT2);
+  }
+  else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater on IO3
     new_levelio3 = 0;
   }
@@ -1286,16 +1273,28 @@ void outIO3()
   pow = 2.55 * new_levelio3;
   pwmio3.Out(round(pow));
 #else  // PWM Mode, fan on IO3
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  int newOT1 = levelOT1;
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    newOT1 = min(levelIO3, levelOT1);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater on OT1
-    ssr.Out(0, levelOT2);
+    newOT1 = 0;
   }
   else
   { // turn OT1 and OT2 back on again if levelIO3 is above cutoff value.
-    ssr.Out(levelOT1, levelOT2);
+    newOT1 = levelOT1;
   }
+  ssr.Out(newOT1, levelOT2);
+  Serial.print(F("Setting HEATER_DUTY (OT1) to "));
+  Serial.println(newOT1);
+
   pow = 2.55 * levelIO3;
   pwmio3.Out(round(pow));
+  Serial.print(F("Setting IO3 to "));
+  Serial.print(levelIO3);
+  Serial.println(F(" * 2.55"));
 #endif // PWM Mode, fan on IO3
 }
 #endif
