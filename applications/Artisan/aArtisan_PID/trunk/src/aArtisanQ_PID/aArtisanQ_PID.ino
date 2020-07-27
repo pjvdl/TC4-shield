@@ -154,7 +154,9 @@
 //          Minor changes to user.h defaults
 //          Version 6_7 released
 
-#define BANNER_ARTISAN "aArtisanQ_PID 6_7"
+#define BANNER_ARTISAN_1 "aArtisanQ_PID"
+#define BANNER_ARTISAN_2 "Version 6_7"
+#define BANNER_ARTISAN_3 "10 July 2020"
 
 // this library included with the arduino distribution
 #include <Wire.h>
@@ -1164,6 +1166,11 @@ void checkButtons()
 // ----------------------------------
 void outOT1()
 { // update output for OT1
+  if (levelOT1 > MAX_OT1)
+    levelOT1 = MAX_OT1; // don't allow OT1 to exceed maximum
+  if (levelOT1 < MIN_OT1)
+    levelOT1 = MIN_OT1; // don't allow OT1 to turn on less than minimum
+
   uint8_t new_levelot1;
 #ifdef PHASE_ANGLE_CONTROL
 #ifdef IO3_HTR_PAC // OT1 not cutoff by fan duty in IO3_HTR_PAC mode
@@ -1254,6 +1261,10 @@ uint8_t getHeaterDuty()
 // ----------------------------------
 void outIO3()
 { // update output for IO3
+  if (levelIO3 > MAX_IO3)
+    levelIO3 = MAX_IO3; // don't allow IO3 to exceed maximum
+  if (levelIO3 < MIN_IO3)
+    levelIO3 = MIN_IO3; // don't allow IO3 to turn on less than minimum
 
   float pow;
 
@@ -1497,12 +1508,25 @@ void checkButtonPins()
 // ------------------------------------------------------------------------
 // MAIN
 //
+void blinkInternalLed()
+{
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
+  delay(5);                       // wait for 10ms
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
+  // delay(500); 
+}
+
 void setup()
 {
   delay(100);
+  pinMode(LED_BUILTIN, OUTPUT);
+  blinkInternalLed();
+
   Wire.begin();
   Serial.begin(BAUD);
   amb.init(AMB_FILTER); // initialize ambient temp filtering
+
+  blinkInternalLed();
 
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
 #ifdef OLED_I2C
@@ -1516,13 +1540,17 @@ void setup()
   lcd.begin(20, 4);
 #else
   lcd.begin(16, 2);
-#endif
-#endif
+#endif // LCD_4x20
+#endif // OLED_I2C
 
   BACKLIGHT;
   lcdSetCursor(0, 0);
-  lcd.print(BANNER_ARTISAN); // display version banner
+  lcd.print(BANNER_ARTISAN_1); // display version banner
   lcdSetCursor(0, 1);
+  lcd.print(BANNER_ARTISAN_2); // display version banner
+  lcdSetCursor(0, 2);
+  lcd.print(BANNER_ARTISAN_3); // display version banner
+  lcdSetCursor(0, 3);
 #ifdef ANDROID
   lcd.print(F("ANDROID")); // display version banner
 #endif                     // ANDROID
@@ -1532,8 +1560,8 @@ void setup()
 #ifdef ROASTLOGGER
   lcd.print(F("ROASTLOGGER")); // display version banner
 #endif                         // ROASTLOGGER
-
-#endif
+delay(3000);
+#endif // LCD
 
 #ifdef LCDAPTER
   buttons.begin(4);
@@ -1689,6 +1717,8 @@ void setup()
 // -----------------------------------------------------------------
 void loop()
 {
+    blinkInternalLed();
+
 #ifdef PHASE_ANGLE_CONTROL
   if (ACdetect())
   {
