@@ -116,7 +116,7 @@
 
 // cut power to Heater if fan duty is less than HTR_CUTOFF_FAN_VAL (to protect heater in air roaster). Set to 0 for no cutoff
 #define HTR_CUTOFF_FAN_VAL 30
-#define HTR_CUTOFF_FAN_RAMP 1 // Ramp heater so that heat % cannot exceed fan %
+#define HTR_CUTOFF_FAN_RAMP 0.9 // Ramp heater so that heat % cannot exceed fan %
 
 #define FAN_AUTO_COOL 100 // Set fan output duty for auto cool when using PID;STOP command
 
@@ -157,8 +157,8 @@
 // #define TIME_BASE pwmN2sec
 // #define TIME_BASE pwmN1Hz // recommended for most electric heaters controlled by standard SSR
 // #define TIME_BASE pwmN2Hz
-#define TIME_BASE pwmN4Hz
-//#define TIME_BASE pwmN8Hz
+// #define TIME_BASE pwmN4Hz
+#define TIME_BASE pwmN8Hz
 // The faster frequencies below are for advanced users only, and will require changes to the PWM16 Library
 //#define TIME_BASE 15 // approx. 977 Hz
 //#define TIME_BASE 7 // approx. 1.95kHz
