@@ -116,7 +116,11 @@
 
 // cut power to Heater if fan duty is less than HTR_CUTOFF_FAN_VAL (to protect heater in air roaster). Set to 0 for no cutoff
 #define HTR_CUTOFF_FAN_VAL 30
-#define HTR_CUTOFF_FAN_RAMP 0.9 // Ramp heater so that heat % cannot exceed fan %
+
+ // Ramp heater so that heat % cannot exceed linear relationship to fan given by:
+ // Max heat % = HTR_CUTOFF_FAN_RAMP * Fan % + HTR_MAX_AT_FAN_0
+#define HTR_CUTOFF_FAN_RAMP 0.3
+#define HTR_MAX_AT_FAN_0 45 
 
 #define FAN_AUTO_COOL 100 // Set fan output duty for auto cool when using PID;STOP command
 

@@ -1178,7 +1178,7 @@ void outOT1()
 #else
   if (HTR_CUTOFF_FAN_RAMP)
   {
-    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP;
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
     new_levelot1 = min(levelOT1, maxHeaterDuty);
   }
   else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
@@ -1194,7 +1194,7 @@ void outOT1()
 #else // PWM Mode
   if (HTR_CUTOFF_FAN_RAMP)
   {
-    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP;
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
     new_levelot1 = min(levelOT1, maxHeaterDuty);
   }
   else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
@@ -1225,7 +1225,7 @@ void outOT2()
 #else // PWM Mode
   if (HTR_CUTOFF_FAN_RAMP)
   {
-    int maxHeaterDuty = min(levelOT1, levelIO3 * (float) HTR_CUTOFF_FAN_RAMP);
+    int maxHeaterDuty = min(levelOT1, levelIO3 * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0);
     ssr.Out(maxHeaterDuty, levelOT2);
     Serial.print(F("Heater limited to max of FAN_DUTY * RAMP"));
     Serial.println(maxHeaterDuty);
@@ -1248,7 +1248,7 @@ uint8_t getHeaterDuty()
 {
   if (HTR_CUTOFF_FAN_RAMP)
   {
-    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP;
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
     return min(HEATER_DUTY, maxHeaterDuty);
   }
   if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
@@ -1287,7 +1287,7 @@ void outIO3()
   int newOT1 = levelOT1;
   if (HTR_CUTOFF_FAN_RAMP)
   {
-    newOT1 = min(levelIO3, levelOT1 * (float) HTR_CUTOFF_FAN_RAMP);
+    newOT1 = min(levelOT1, levelIO3 * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0);
   }
   else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater on OT1
