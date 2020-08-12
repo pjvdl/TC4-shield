@@ -623,7 +623,7 @@ void updateLCD()
     int it01;
     uint8_t jj, j;
     uint8_t k;
-    for (jj = 0, j = 0; jj < NC && j < 2; ++jj)
+    for (jj = 0, j = 0; jj < NC && j < 3; ++jj)
     {
       k = actv[jj];
       if (k != 0)
@@ -635,42 +635,54 @@ void updateLCD()
         else if (it01 < -999)
           it01 = -999;
         sprintf(st1, "%3d", it01);
-        if (j == 1)
+        if (j == 2)
         {
 #ifdef LCD_8x16
-          lcdSetCursor(0, 4);
+          lcdSetCursor(0, 6);
 #else
-          lcdSetCursor(13, 0);
+          lcdSetCursor(6, 0);
 #endif
-          lcd.print(F("ET:"));
+          lcd.print(F("XT:"));
         }
         else
         {
-#ifdef LCD_8x16
-          lcdSetCursor(0, 5);
-#else
-          lcdSetCursor(13, 1);
-#endif
-          lcd.print(F("BT:"));
+          if (j == 1)
+          {
+  #ifdef LCD_8x16
+            lcdSetCursor(0, 4);
+  #else
+            lcdSetCursor(13, 0);
+  #endif
+            lcd.print(F("ET:"));
+          }
+          else
+          {
+  #ifdef LCD_8x16
+            lcdSetCursor(0, 5);
+  #else
+            lcdSetCursor(13, 1);
+  #endif
+            lcd.print(F("BT:"));
+          }
         }
         lcd.print(st1);
       }
     }
 
     // AT
-    it01 = round(convertUnits(AT));
-    if (it01 > 999)
-      it01 = 999;
-    else if (it01 < -999)
-      it01 = -999;
-    sprintf(st1, "%3d", it01);
-#ifdef LCD_8x16
-    lcdSetCursor(0, 6);
-#else
-    lcdSetCursor(6, 0);
-#endif
-    lcd.print(F("AT:"));
-    lcd.print(st1);
+//     it01 = round(convertUnits(AT));
+//     if (it01 > 999)
+//       it01 = 999;
+//     else if (it01 < -999)
+//       it01 = -999;
+//     sprintf(st1, "%3d", it01);
+// #ifdef LCD_8x16
+//     lcdSetCursor(0, 6);
+// #else
+//     lcdSetCursor(6, 0);
+// #endif
+//     lcd.print(F("AT:"));
+//     lcd.print(st1);
 
 #ifdef PID_CONTROL
     if (myPID.GetMode() != MANUAL)
@@ -1627,7 +1639,7 @@ delay(3000);
   // initialize the active channels to default values
   actv[0] = 2; // ET on TC1
   actv[1] = 1; // BT on TC2
-  actv[2] = 0; // default inactive
+  actv[2] = 3; // XT Exhaust
   actv[3] = 0; // default inactive
 
   // assign thermocouple types
