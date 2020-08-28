@@ -642,7 +642,7 @@ void updateLCD()
 #else
           lcdSetCursor(6, 0);
 #endif
-          lcd.print(F("XT:"));
+          lcd.print(F("BT:"));
         }
         else
         {
@@ -662,7 +662,7 @@ void updateLCD()
   #else
             lcdSetCursor(13, 1);
   #endif
-            lcd.print(F("BT:"));
+            lcd.print(F("XT:"));
           }
         }
         lcd.print(st1);
