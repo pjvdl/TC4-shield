@@ -58,8 +58,8 @@
 /////////////////////
 // AC Power Options
 // Needed for CONFIG_PAC options
-#define FREQ60 // 60Hz
-//#define FREQ50 // 50Hz
+//#define FREQ60 // 60Hz
+#define FREQ50 // 50Hz
 
 ////////////////////
 // Thermocouple Input Options
@@ -95,9 +95,9 @@
 #define PID_CONTROL
 #define PID_CHAN 1 // physical channel for PID input (corresponding to thermocouple inputs T1-T4)
 #define CT 1000    // default cycle time for the PID, in ms
-#define PRO 5.00   // initial proportional parameter
-#define INT 0.15   // initial integral parameter
-#define DER 0.00   // initial derivative parameter
+#define PRO 1.00   // initial proportional parameter
+#define INT 0.10   // initial integral parameter
+#define DER 8.00   // initial derivative parameter
 
 //#define POM // enable Proportional on Measurement (NOTE: PID PARAMETERS WILL REQUIRE CHANGING). Disable for Proportional on Error.
 
@@ -106,23 +106,23 @@
 ////////////////////
 // Heater and Fan Limits/Options
 #define MIN_OT1 0   // Set output % for lower limit for OT1.  0% power will always be available
-#define MAX_OT1 100 // Set output % for upper limit for OT1
+#define MAX_OT1 60 // Set output % for upper limit for OT1
 
 #define MIN_OT2 0   // Set output % for lower limit for OT2.  0% power will always be available
 #define MAX_OT2 100 // Set output % for upper limit for OT2
 
 #define MIN_IO3 10   // Set output % for lower limit for IO3.  0% power will always be available
-#define MAX_IO3 100 // Set output % for upper limit for IO3
+#define MAX_IO3 60 // Set output % for upper limit for IO3
 
 // cut power to Heater if fan duty is less than HTR_CUTOFF_FAN_VAL (to protect heater in air roaster). Set to 0 for no cutoff
-#define HTR_CUTOFF_FAN_VAL 30
+#define HTR_CUTOFF_FAN_VAL 0
 
  // Ramp heater so that heat % cannot exceed linear relationship to fan given by:
  // Max heat % = HTR_CUTOFF_FAN_RAMP * Fan % + HTR_MAX_AT_FAN_0
-#define HTR_CUTOFF_FAN_RAMP 0.25
-#define HTR_MAX_AT_FAN_0 40 
+#define HTR_CUTOFF_FAN_RAMP 0.01 // non-zero to pass test for ramping in code
+#define HTR_MAX_AT_FAN_0 60 // Max to avoid exceed current of 20A 
 
-#define FAN_AUTO_COOL 100 // Set fan output duty for auto cool when using PID;STOP command
+#define FAN_AUTO_COOL 60 // Set fan output duty for auto cool when using PID;STOP command
 
 ////////////////////
 // Command Echo
@@ -160,9 +160,9 @@
 //#define TIME_BASE pwmN4sec  // recommended for Hottop D which has mechanical relay
 // #define TIME_BASE pwmN2sec
 // #define TIME_BASE pwmN1Hz // recommended for most electric heaters controlled by standard SSR
-// #define TIME_BASE pwmN2Hz
+#define TIME_BASE pwmN2Hz
 // #define TIME_BASE pwmN4Hz
-#define TIME_BASE pwmN8Hz
+// #define TIME_BASE pwmN8Hz
 // The faster frequencies below are for advanced users only, and will require changes to the PWM16 Library
 //#define TIME_BASE 15 // approx. 977 Hz
 //#define TIME_BASE 7 // approx. 1.95kHz

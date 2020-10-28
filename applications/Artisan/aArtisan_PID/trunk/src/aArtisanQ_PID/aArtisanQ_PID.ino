@@ -1671,6 +1671,11 @@ delay(3000);
 #endif
   ci.addCommand(&filt);
 
+  // Update all outputs to initialise to correct values
+  outOT1();
+  outOT2();
+  outIO3();
+
 #if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
   dcfan.init();                                       // initialize conditions for dcfan
 #endif
