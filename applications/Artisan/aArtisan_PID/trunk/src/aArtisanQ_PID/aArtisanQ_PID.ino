@@ -154,7 +154,9 @@
 //          Minor changes to user.h defaults
 //          Version 6_7 released
 
-#define BANNER_ARTISAN "aArtisanQ_PID 6_7"
+#define BANNER_ARTISAN_1 "aArtisanQ_PID"
+#define BANNER_ARTISAN_2 "Version 6_7"
+#define BANNER_ARTISAN_3 "10 July 2020"
 
 // this library included with the arduino distribution
 #include <Wire.h>
@@ -188,6 +190,14 @@
 #endif
 #ifdef LCD_I2C
 #include <LiquidCrystal_I2C.h>
+#endif
+#ifdef OLED_I2C
+#include <Arduino.h>
+#include <U8x8lib.h>
+
+#ifdef U8X8_HAVE_HW_SPI
+#include <SPI.h>
+#endif
 #endif
 
 // ------------------------ other compile directives
@@ -294,7 +304,7 @@ TC_TYPE4 tc4;
 
 // ---------------------------------- LCD interface definition
 
-#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C
+#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
 // LCD output strings
 char st1[6], st2[6];
 int LCD_mode = 0;
@@ -312,6 +322,12 @@ cLCD lcd; // I2C LCD interface
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // Set the LCD I2C address
 #define BACKLIGHT lcd.backlight();
+#endif
+
+#ifdef OLED_I2C
+//  U8G2_SSD1306_128X64_NONAME_F_SW_I2C lcd(U8G2_R0, /* clock=*/ SCL, /* data=*/ SDA, /* reset=*/ U8X8_PIN_NONE);   // All Boards without Reset of the Display
+U8X8_SSD1306_128X64_NONAME_HW_I2C lcd(/* clock=*/SCL, /* data=*/SDA, /* reset=*/U8X8_PIN_NONE); // OLEDs without Reset of the Display
+#define BACKLIGHT lcd.setPowerSave(0);                                                          // disable powersave
 #endif
 
 #ifdef LCD_PARALLEL
@@ -369,7 +385,7 @@ void checkSerial()
   if (result != NULL)
   { // some things we might want to do after a command is executed
 #if defined LCD && defined COMMAND_ECHO
-    lcd.setCursor(0, 0); // echo all commands to the LCD
+    lcdSetCursor(0, 0); // echo all commands to the LCD
     lcd.print(result);
 #endif
 #ifdef MEMORY_CHK
@@ -431,16 +447,10 @@ void logger()
   }
 
   Serial.print(F(","));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.print(0);
-  }
-  else
-  {
-    Serial.print(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
+#ifdef PID_CONTROL
   if (myPID.GetMode() != MANUAL)
   { // If PID in AUTOMATIC mode
     Serial.print(F(","));
@@ -451,6 +461,7 @@ void logger()
     Serial.print(F(","));
     Serial.print(0); // send 0 if PID is off
   }
+#endif
 
   Serial.println();
 
@@ -474,14 +485,7 @@ void logger()
     }
   }
   Serial.print(F("Power%="));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.println(0);
-  }
-  else
-  {
-    Serial.println(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F("Fan="));
   Serial.print(FAN_DUTY);
 #endif
@@ -510,14 +514,7 @@ void logger()
 
   //#ifdef PLOT_POWER
   Serial.print(F(","));
-  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-  { // send 0 if OT1 has been cut off
-    Serial.print(0);
-  }
-  else
-  {
-    Serial.print(HEATER_DUTY);
-  }
+  Serial.print(getHeaterDuty());
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
   //#endif
@@ -587,7 +584,19 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
   first = false;
 };
 
-#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C
+#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
+void lcdSetCursor(int x, int y)
+{
+  // #ifdef OLED_I2C // Should match the scale of font selected for OLED
+  //   const int X_SCALE = 1;
+  //   const int Y_SCALE = 1;
+  // #else
+  //   const int X_SCALE = 1;
+  //   const int Y_SCALE = 1;
+  // #endif
+  // lcd.setCursor(x * X_SCALE, y * Y_SCALE);
+  lcd.setCursor(x, y);
+}
 // --------------------------------------------
 void updateLCD()
 {
@@ -595,7 +604,7 @@ void updateLCD()
   if (LCD_mode == 0)
   { // Display normal LCD screen
 
-    lcd.setCursor(0, 0);
+    lcdSetCursor(0, 0);
     if (counter / 60 < 10)
       lcd.print(F("0"));
     lcd.print(counter / 60); // Prob can do this better. Check aBourbon.
@@ -604,7 +613,7 @@ void updateLCD()
       lcd.print(F("0"));
     lcd.print(counter - (counter / 60) * 60);
 
-#ifdef LCD_4x20
+#if defined LCD_4x20 || defined LCD_8x16
 
 #ifdef COMMAND_ECHO
     lcd.print(F(" ")); // overwrite artisan commands
@@ -614,7 +623,7 @@ void updateLCD()
     int it01;
     uint8_t jj, j;
     uint8_t k;
-    for (jj = 0, j = 0; jj < NC && j < 2; ++jj)
+    for (jj = 0, j = 0; jj < NC && j < 3; ++jj)
     {
       k = actv[jj];
       if (k != 0)
@@ -625,49 +634,66 @@ void updateLCD()
           it01 = 999;
         else if (it01 < -999)
           it01 = -999;
-        sprintf(st1, "%4d", it01);
-        if (j == 1)
+        sprintf(st1, "%3d", it01);
+        if (j == 2)
         {
-          lcd.setCursor(13, 0);
-          lcd.print(F("ET:"));
+#ifdef LCD_8x16
+          lcdSetCursor(0, 6);
+#else
+          lcdSetCursor(6, 0);
+#endif
+          lcd.print(F("BT:"));
         }
         else
         {
-          lcd.setCursor(13, 1);
-          lcd.print(F("BT:"));
+          if (j == 1)
+          {
+  #ifdef LCD_8x16
+            lcdSetCursor(0, 4);
+  #else
+            lcdSetCursor(13, 0);
+  #endif
+            lcd.print(F("ET:"));
+          }
+          else
+          {
+  #ifdef LCD_8x16
+            lcdSetCursor(0, 5);
+  #else
+            lcdSetCursor(13, 1);
+  #endif
+            lcd.print(F("XT:"));
+          }
         }
         lcd.print(st1);
       }
     }
 
     // AT
-    it01 = round(convertUnits(AT));
-    if (it01 > 999)
-      it01 = 999;
-    else if (it01 < -999)
-      it01 = -999;
-    sprintf(st1, "%3d", it01);
-    lcd.setCursor(6, 0);
-    lcd.print(F("AT:"));
-    lcd.print(st1);
+//     it01 = round(convertUnits(AT));
+//     if (it01 > 999)
+//       it01 = 999;
+//     else if (it01 < -999)
+//       it01 = -999;
+//     sprintf(st1, "%3d", it01);
+// #ifdef LCD_8x16
+//     lcdSetCursor(0, 6);
+// #else
+//     lcdSetCursor(6, 0);
+// #endif
+//     lcd.print(F("AT:"));
+//     lcd.print(st1);
 
 #ifdef PID_CONTROL
     if (myPID.GetMode() != MANUAL)
     { // if PID is on then display PID: nnn% instead of OT1:
-      lcd.setCursor(0, 2);
+      lcdSetCursor(0, 2);
       lcd.print(F("PID:"));
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%4d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%4d", (int)HEATER_DUTY);
-      }
+      sprintf(st1, "%4d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
 
-      lcd.setCursor(13, 2); // display setpoint if PID is on
+      lcdSetCursor(13, 2); // display setpoint if PID is on
       lcd.print(F("SP:"));
       sprintf(st1, "%4d", (int)Setpoint);
       lcd.print(st1);
@@ -675,17 +701,17 @@ void updateLCD()
     else
     {
       //#ifdef ANALOGUE1
-      lcd.setCursor(13, 2);
+      lcdSetCursor(13, 2);
       lcd.print(F("       ")); // blank out SP: nnn if PID is off
                                //#else
-                               //    lcd.setCursor( 0, 2 );
+                               //    lcdSetCursor( 0, 2 );
                                //    lcd.print(F("                    ")); // blank out PID: nnn% and SP: nnn if PID is off and ANALOGUE1 isn't defined
                                //#endif // end ifdef ANALOGUE1
     }
 #endif // end ifdef PID_CONTROL
 
     // RoR
-    lcd.setCursor(0, 1);
+    lcdSetCursor(0, 1);
     lcd.print(F("RoR:"));
     sprintf(st1, "%4d", (int)RoR[ROR_CHAN - 1]); // adjust ROR_CHAN for 0-based array index
     lcd.print(st1);
@@ -694,38 +720,24 @@ void updateLCD()
 #ifdef PID_CONTROL
     if (myPID.GetMode() == MANUAL)
     { // only display OT2: nnn% if PID is off so PID display isn't overwriten
-      lcd.setCursor(0, 2);
+      lcdSetCursor(0, 2);
       lcd.print(F("HTR:"));
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%4d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%4d", (int)HEATER_DUTY);
-      }
+      sprintf(st1, "%4d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
     }
 
 #else  // if PID_CONTROL isn't defined then always display OT1: nnn%
-    lcd.setCursor(0, 2);
+    lcdSetCursor(0, 2);
     lcd.print(F("HTR:"));
-    if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-    { // display 0% if OT1 has been cut off
-      sprintf(st1, "%4d", (int)0);
-    }
-    else
-    {
-      sprintf(st1, "%4d", (int)HEATER_DUTY);
-    }
+    sprintf(st1, "%4d", (int)getHeaterDuty());
     lcd.print(st1);
     lcd.print(F("%"));
-#endif // end ifdef PID_CONTROL
+#endif // end ifdef PID_CONTROL \
        //#endif // end ifdef ANALOGUE1
 
     //#ifdef ANALOGUE2
-    lcd.setCursor(0, 3);
+    lcdSetCursor(0, 3);
     lcd.print(F("FAN:"));
     sprintf(st1, "%4d", (int)FAN_DUTY);
     lcd.print(st1);
@@ -753,15 +765,15 @@ void updateLCD()
           it01 = 999;
         else if (it01 < -999)
           it01 = -999;
-        sprintf(st1, "%4d", it01);
+        sprintf(st1, "%3d", it01);
         if (j == 1)
         {
-          lcd.setCursor(9, 0);
+          lcdSetCursor(9, 0);
           lcd.print(F("ET:"));
         }
         else
         {
-          lcd.setCursor(9, 1);
+          lcdSetCursor(9, 1);
           lcd.print(F("BT:"));
         }
         lcd.print(st1);
@@ -771,29 +783,22 @@ void updateLCD()
 #ifdef PID_CONTROL
     if (myPID.GetMode() != MANUAL)
     {
-      lcd.setCursor(0, 1);
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        lcd.print(F("  0"));
-      }
-      else
-      {
-        sprintf(st1, "%3d", (int)HEATER_DUTY);
-        lcd.print(st1);
-      }
+      lcdSetCursor(0, 1);
+      sprintf(st1, "%3d", (int)getHeaterDuty());
+      lcd.print(st1);
       lcd.print(F("%"));
       sprintf(st1, "%4d", (int)Setpoint);
       lcd.print(st1);
     }
     else
     {
-      lcd.setCursor(0, 1);
+      lcdSetCursor(0, 1);
       lcd.print(F("RoR:"));
       sprintf(st1, "%4d", (int)RoR[ROR_CHAN - 1]); // adjust ROR_CHAN for 0-based array index
       lcd.print(st1);
     }
 #else
-    lcd.setCursor(0, 1);
+    lcdSetCursor(0, 1);
     lcd.print(F("RoR:"));
     sprintf(st1, "%4d", (int)RoR[ROR_CHAN - 1]); // adjust ROR_CHAN for 0-based array index
     lcd.print(st1);
@@ -802,17 +807,10 @@ void updateLCD()
 #ifdef ANALOGUE1
     if (analogue1_changed == true)
     { // overwrite RoR or PID values
-      lcd.setCursor(0, 1);
+      lcdSetCursor(0, 1);
       lcd.print(F("HTR:     "));
-      lcd.setCursor(4, 1);
-      if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
-      { // display 0% if OT1 has been cut off
-        sprintf(st1, "%3d", (int)0);
-      }
-      else
-      {
-        sprintf(st1, "%3d", (int)HEATER_DUTY);
-      }
+      lcdSetCursor(4, 1);
+      sprintf(st1, "%3d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
     }
@@ -820,9 +818,9 @@ void updateLCD()
 #ifdef ANALOGUE2
     if (analogue2_changed == true)
     { // overwrite RoR or PID values
-      lcd.setCursor(0, 1);
+      lcdSetCursor(0, 1);
       lcd.print(F("FAN:     "));
-      lcd.setCursor(4, 1);
+      lcdSetCursor(4, 1);
       sprintf(st1, "%3d", (int)FAN_DUTY);
       lcd.print(st1);
       lcd.print(F("%"));
@@ -836,26 +834,26 @@ void updateLCD()
   { // Display alternative 1 LCD display
 
 #ifdef PID_CONTROL
-#ifdef LCD_4x20
-    lcd.setCursor(0, 0);
+#if defined LCD_4x20 || defined LCD_8x16
+    lcdSetCursor(0, 0);
     for (int i = 0; i < 20; i++)
     {
       if (profile_name[i] != 0)
         lcd.print(profile_name[i]);
     }
-    lcd.setCursor(0, 1);
+    lcdSetCursor(0, 1);
     for (int i = 0; i < 20; i++)
     {
       if (profile_description[i] != 0)
         lcd.print(profile_description[i]);
     }
-    lcd.setCursor(0, 2);
+    lcdSetCursor(0, 2);
     for (int i = 20; i < 40; i++)
     {
       if (profile_description[i] != 0)
         lcd.print(profile_description[i]);
     }
-    lcd.setCursor(0, 3);
+    lcdSetCursor(0, 3);
     lcd.print(F("PID: "));
     lcd.print(myPID.GetKp());
     lcd.print(F(","));
@@ -864,13 +862,13 @@ void updateLCD()
     lcd.print(myPID.GetKd());
 
 #else  // if not def LCD_4x20 ie if using a standard 2x16 LCD
-    lcd.setCursor(0, 0);
+    lcdSetCursor(0, 0);
     for (int i = 0; i < 20; i++)
     {
       if (profile_name[i] != 0)
         lcd.print(profile_name[i]);
     }
-    lcd.setCursor(0, 1);
+    lcdSetCursor(0, 1);
     lcd.print(F("P:"));
     lcd.print(myPID.GetKp());
     lcd.print(F(","));
@@ -963,6 +961,8 @@ void readAnlg1()
 #else // PWM Mode
     levelOT1 = reading;
     outOT1();
+    Serial.print(F("Updating OT1 (heater) with new analogue value "));
+    Serial.println(levelOT1, DEC);
 #endif
   }
   else
@@ -988,6 +988,8 @@ void readAnlg2()
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
+    Serial.print(F("Updating IO3 (fan) with new analogue value "));
+    Serial.println(levelIO3, DEC);
     outIO3(); // update fan output on IO3
 #endif
   }
@@ -1176,12 +1178,22 @@ void checkButtons()
 // ----------------------------------
 void outOT1()
 { // update output for OT1
+  if (levelOT1 > MAX_OT1)
+    levelOT1 = MAX_OT1; // don't allow OT1 to exceed maximum
+  if (levelOT1 < MIN_OT1)
+    levelOT1 = MIN_OT1; // don't allow OT1 to turn on less than minimum
+
   uint8_t new_levelot1;
 #ifdef PHASE_ANGLE_CONTROL
 #ifdef IO3_HTR_PAC // OT1 not cutoff by fan duty in IO3_HTR_PAC mode
   new_levelot1 = levelOT1;
 #else
-  if (levelOT2 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
+    new_levelot1 = min(levelOT1, maxHeaterDuty);
+  }
+  else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
   {
     new_levelot1 = 0;
   }
@@ -1192,7 +1204,12 @@ void outOT1()
 #endif
   output_level_icc(new_levelot1);
 #else // PWM Mode
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
+    new_levelot1 = min(levelOT1, maxHeaterDuty);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   {
     new_levelot1 = 0;
   }
@@ -1201,6 +1218,8 @@ void outOT1()
     new_levelot1 = levelOT1;
   }
   ssr.Out(new_levelot1, levelOT2);
+  Serial.print(F("Setting HEATER_DUTY (OT1) to "));
+  Serial.println(new_levelot1);
 #endif
 }
 
@@ -1216,21 +1235,48 @@ void outOT2()
 #endif
   output_level_pac(levelOT2);
 #else // PWM Mode
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = min(levelOT1, levelIO3 * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0);
+    ssr.Out(maxHeaterDuty, levelOT2);
+    Serial.print(F("Heater limited to max of FAN_DUTY * RAMP"));
+    Serial.println(maxHeaterDuty);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater
     ssr.Out(0, levelOT2);
+    Serial.println(F("Heater cutoff for low fan (outOT2)"));
   }
   else
   { // turn OT1 and OT2 back on again if levelIO3 is above cutoff value.
     ssr.Out(levelOT1, levelOT2);
+    Serial.println(F("Heater back on for low fan (outOT2)"));
   }
 #endif
 }
 
 #if (!defined(CONFIG_PAC3)) // completely disable outIO3 if using CONFIG_PAC3 mode (uses IO3 for interrupt)
+uint8_t getHeaterDuty()
+{
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
+    return min(HEATER_DUTY, maxHeaterDuty);
+  }
+  if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
+  { // send 0 if OT1 has been cut off
+    return 0;
+  }
+  return HEATER_DUTY;
+}
+
 // ----------------------------------
 void outIO3()
 { // update output for IO3
+  if (levelIO3 > MAX_IO3)
+    levelIO3 = MAX_IO3; // don't allow IO3 to exceed maximum
+  if (levelIO3 < MIN_IO3)
+    levelIO3 = MIN_IO3; // don't allow IO3 to turn on less than minimum
 
   float pow;
 
@@ -1238,7 +1284,11 @@ void outIO3()
   uint8_t new_levelio3;
   new_levelio3 = levelIO3;
 #ifdef IO3_HTR_PAC
-  if (levelOT2 < HTR_CUTOFF_FAN_VAL)
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    new_levelio3 = min(new_levelio3, levelOT2);
+  }
+  else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater on IO3
     new_levelio3 = 0;
   }
@@ -1246,16 +1296,28 @@ void outIO3()
   pow = 2.55 * new_levelio3;
   pwmio3.Out(round(pow));
 #else  // PWM Mode, fan on IO3
-  if (levelIO3 < HTR_CUTOFF_FAN_VAL)
+  int newOT1 = levelOT1;
+  if (HTR_CUTOFF_FAN_RAMP)
+  {
+    newOT1 = min(levelOT1, levelIO3 * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0);
+  }
+  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
   { // if levelIO3 < cutoff value then turn off heater on OT1
-    ssr.Out(0, levelOT2);
+    newOT1 = 0;
   }
   else
   { // turn OT1 and OT2 back on again if levelIO3 is above cutoff value.
-    ssr.Out(levelOT1, levelOT2);
+    newOT1 = levelOT1;
   }
+  ssr.Out(newOT1, levelOT2);
+  Serial.print(F("Setting HEATER_DUTY (OT1) to "));
+  Serial.println(newOT1);
+
   pow = 2.55 * levelIO3;
   pwmio3.Out(round(pow));
+  Serial.print(F("Setting IO3 to "));
+  Serial.print(levelIO3);
+  Serial.println(F(" * 2.55"));
 #endif // PWM Mode, fan on IO3
 }
 #endif
@@ -1458,23 +1520,49 @@ void checkButtonPins()
 // ------------------------------------------------------------------------
 // MAIN
 //
+void blinkInternalLed()
+{
+  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
+  delay(5);                       // wait for 10ms
+  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
+  // delay(500); 
+}
+
 void setup()
 {
   delay(100);
+  pinMode(LED_BUILTIN, OUTPUT);
+  blinkInternalLed();
+
   Wire.begin();
   Serial.begin(BAUD);
   amb.init(AMB_FILTER); // initialize ambient temp filtering
 
-#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C
+  blinkInternalLed();
+
+#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
+#ifdef OLED_I2C
+  lcd.begin();
+  // lcd.setBusClock(100000);
+  // lcd.setFont(u8x8_font_8x13_1x2_f);
+  lcd.setFont(u8x8_font_artossans8_r);
+  lcd.setPowerSave(0);
+#else
 #ifdef LCD_4x20
   lcd.begin(20, 4);
 #else
   lcd.begin(16, 2);
-#endif
+#endif // LCD_4x20
+#endif // OLED_I2C
+
   BACKLIGHT;
-  lcd.setCursor(0, 0);
-  lcd.print(BANNER_ARTISAN); // display version banner
-  lcd.setCursor(0, 1);
+  lcdSetCursor(0, 0);
+  lcd.print(BANNER_ARTISAN_1); // display version banner
+  lcdSetCursor(0, 1);
+  lcd.print(BANNER_ARTISAN_2); // display version banner
+  lcdSetCursor(0, 2);
+  lcd.print(BANNER_ARTISAN_3); // display version banner
+  lcdSetCursor(0, 3);
 #ifdef ANDROID
   lcd.print(F("ANDROID")); // display version banner
 #endif                     // ANDROID
@@ -1484,8 +1572,8 @@ void setup()
 #ifdef ROASTLOGGER
   lcd.print(F("ROASTLOGGER")); // display version banner
 #endif                         // ROASTLOGGER
-
-#endif
+delay(3000);
+#endif // LCD
 
 #ifdef LCDAPTER
   buttons.begin(4);
@@ -1551,7 +1639,7 @@ void setup()
   // initialize the active channels to default values
   actv[0] = 2; // ET on TC1
   actv[1] = 1; // BT on TC2
-  actv[2] = 0; // default inactive
+  actv[2] = 3; // XT Exhaust
   actv[3] = 0; // default inactive
 
   // assign thermocouple types
@@ -1572,7 +1660,9 @@ void setup()
   ci.addCommand(&ot2);
   ci.addCommand(&ot1);
   ci.addCommand(&reader);
+#ifdef PID_CONTROL
   ci.addCommand(&pid);
+#endif
   ci.addCommand(&reset);
 #ifdef ROASTLOGGER
   ci.addCommand(&load);
@@ -1581,13 +1671,18 @@ void setup()
 #endif
   ci.addCommand(&filt);
 
+  // Update all outputs to initialise to correct values
+  outOT1();
+  outOT2();
+  outIO3();
+
 #if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
   dcfan.init();                                       // initialize conditions for dcfan
 #endif
 
   pinMode(LED_PIN, OUTPUT);
 
-#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C
+#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
   delay(500);
   lcd.clear();
 #endif
@@ -1639,6 +1734,8 @@ void setup()
 // -----------------------------------------------------------------
 void loop()
 {
+    blinkInternalLed();
+
 #ifdef PHASE_ANGLE_CONTROL
   if (ACdetect())
   {
@@ -1707,7 +1804,7 @@ void loop()
 #endif
 
 // Update LCD if defined
-#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C
+#if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
   updateLCD();
 #endif
 
