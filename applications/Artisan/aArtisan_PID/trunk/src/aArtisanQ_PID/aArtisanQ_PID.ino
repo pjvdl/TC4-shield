@@ -687,13 +687,13 @@ void updateLCD()
 #ifdef PID_CONTROL
     if (myPID.GetMode() != MANUAL)
     { // if PID is on then display PID: nnn% instead of OT1:
-      lcdSetCursor(0, 2);
+      lcdSetCursor(8, 7);
       lcd.print(F("PID:"));
       sprintf(st1, "%4d", (int)getHeaterDuty());
       lcd.print(st1);
       lcd.print(F("%"));
 
-      lcdSetCursor(13, 2); // display setpoint if PID is on
+      lcdSetCursor(0, 7); // display setpoint if PID is on
       lcd.print(F("SP:"));
       sprintf(st1, "%4d", (int)Setpoint);
       lcd.print(st1);
