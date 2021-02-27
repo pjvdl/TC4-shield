@@ -279,7 +279,8 @@ uint16_t looptime = 1000;
 
 // class objects
 cADC adc(A_ADC);      // MCP3424
-ambSensor amb(A_AMB); // MCP9800
+#define AMB_ADDR (A_AMB + (0x5 & 7))
+ambSensor amb(AMB_ADDR); // MCP9800
 filterRC fT[NC];      // filter for logged ET, BT
 filterRC fRise[NC];   // heavily filtered for calculating RoR
 filterRC fRoR[NC];    // post-filtering on RoR values
