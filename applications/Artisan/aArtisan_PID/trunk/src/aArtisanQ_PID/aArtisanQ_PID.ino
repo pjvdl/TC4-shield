@@ -155,8 +155,8 @@
 //          Version 6_7 released
 
 #define BANNER_ARTISAN_1 "aArtisanQ_PID"
-#define BANNER_ARTISAN_2 "Version 6_7"
-#define BANNER_ARTISAN_3 "10 July 2020"
+#define BANNER_ARTISAN_2 "Version 6_8"
+#define BANNER_ARTISAN_3 "16 Mar 2021"
 
 // this library included with the arduino distribution
 #include <Wire.h>

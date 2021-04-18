@@ -9,9 +9,13 @@
                 "/home/paul/Arduino/libraries/**",
                 "${workspaceFolder}/**",
                 "/media/data/home/paul/bin/arduino-1.8.13/hardware/arduino/avr/**",
-                "/media/data/home/paul/bin/arduino-1.8.13/tools/**"
+                "/media/data/home/paul/bin/arduino-1.8.13/tools/**",
+                "/media/data/home/paul/bin/arduino-1.8.13/hardware/tools/**",
+                "/media/data/home/paul/bin/arduino-1.8.13/libraries/**"
             ],
-            "defines": [],
+            "defines": [
+                "USBCON"
+            ],
             "compilerPath": "/usr/bin/gcc",
             "cStandard": "gnu11",
             "cppStandard": "gnu++14",
