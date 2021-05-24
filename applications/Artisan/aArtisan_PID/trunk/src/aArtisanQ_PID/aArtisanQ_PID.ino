@@ -955,14 +955,18 @@ void readAnlg1()
 #ifdef IO3_HTR_PAC
     levelIO3 = reading;
     outIO3();
+    Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));
+    Serial.println(levelIO3, DEC);
 #else
     levelOT1 = reading;
     outOT1();
+    Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
+    Serial.println(levelOT1, DEC);
 #endif
 #else // PWM Mode
     levelOT1 = reading;
     outOT1();
-    Serial.print(F("Updating OT1 (heater) with new analogue value "));
+    Serial.print(F("Updating OT1 (heater PWM) with new analogue value "));
     Serial.println(levelOT1, DEC);
 #endif
   }
@@ -986,10 +990,12 @@ void readAnlg2()
     old_reading_anlg2 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
     levelOT2 = reading;
+    Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
+    Serial.println(levelOT2, DEC);
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
-    Serial.print(F("Updating IO3 (fan) with new analogue value "));
+    Serial.print(F("Updating IO3 (fan PWM) with new analogue value "));
     Serial.println(levelIO3, DEC);
     outIO3(); // update fan output on IO3
 #endif
@@ -1204,6 +1210,8 @@ void outOT1()
   }
 #endif
   output_level_icc(new_levelot1);
+  Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
+  Serial.println(new_levelot1);
 #else // PWM Mode
   if (HTR_CUTOFF_FAN_RAMP)
   {
@@ -1219,7 +1227,7 @@ void outOT1()
     new_levelot1 = levelOT1;
   }
   ssr.Out(new_levelot1, levelOT2);
-  Serial.print(F("Setting HEATER_DUTY (OT1) to "));
+  Serial.print(F("Setting HEATER_DUTY PWM (OT1) to "));
   Serial.println(new_levelot1);
 #endif
 }
@@ -1296,6 +1304,8 @@ void outIO3()
 #endif // IO3_HTR_PAC
   pow = 2.55 * new_levelio3;
   pwmio3.Out(round(pow));
+  Serial.print(F("Setting HEATER_DUTY (IO3) to "));
+  Serial.println(pow);  
 #else  // PWM Mode, fan on IO3
   int newOT1 = levelOT1;
   if (HTR_CUTOFF_FAN_RAMP)
@@ -1523,16 +1533,16 @@ void checkButtonPins()
 //
 void blinkInternalLed()
 {
-  digitalWrite(LED_BUILTIN, HIGH);   // turn the LED on 
+  digitalWrite(LED_PIN, HIGH);   // turn the LED on 
   delay(5);                       // wait for 10ms
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off 
+  digitalWrite(LED_PIN, LOW);    // turn the LED off 
   // delay(500); 
 }
 
 void setup()
 {
   delay(100);
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
   blinkInternalLed();
 
   Wire.begin();
@@ -1735,7 +1745,7 @@ delay(3000);
 // -----------------------------------------------------------------
 void loop()
 {
-    blinkInternalLed();
+    //blinkInternalLed();
 
 #ifdef PHASE_ANGLE_CONTROL
   if (ACdetect())

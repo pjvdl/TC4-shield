@@ -181,6 +181,9 @@ void output_level_pac( uint8_t pac_level ) {
     pac_output = 0;
   else
     pac_output = pac_level;
+
+  Serial.print(F("output_level_pac "));
+  Serial.println(pac_output);
 }
 
 // call this to set integral cycle control output levels, 0 to 100 
@@ -190,6 +193,10 @@ void output_level_icc( uint8_t icc_level ) {
     ratioN = 0;
   else
     ratioN = icc_level;
+
+  Serial.print(F("output_level_icc "));
+  Serial.println(ratioN);
+
   newN = true;  // tell the interrupt routine to restart sequence
 }
 

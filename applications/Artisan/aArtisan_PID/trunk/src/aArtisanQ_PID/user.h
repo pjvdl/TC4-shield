@@ -20,8 +20,8 @@
 
 ////////////////////
 // Base configurations (leave only one uncommented)
-#define CONFIG_PWM // slow PWM on OT1 (heater); fast PWM output (3.922kHz) on IO3 (DC fan); ZCD not required
-//#define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
+//#define CONFIG_PWM // slow PWM on OT1 (heater); fast PWM output (3.922kHz) on IO3 (DC fan); ZCD not required
+#define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
 //#define CONFIG_PAC2_IO3HTR // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 reserved for fast PWM output for heater
 //#define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO3 reads the req'd ZCD; IO3 not available for output
 
@@ -92,7 +92,7 @@
 
 ////////////////////
 // PID Control Options
-#define PID_CONTROL
+//#define PID_CONTROL
 #define PID_CHAN 1 // physical channel for PID input (corresponding to thermocouple inputs T1-T4)
 #define CT 1000    // default cycle time for the PID, in ms
 #define PRO 0.80   // initial proportional parameter
@@ -109,7 +109,7 @@
 #define MAX_OT1 60 // Set output % for upper limit for OT1
 
 #define MIN_OT2 0   // Set output % for lower limit for OT2.  0% power will always be available
-#define MAX_OT2 100 // Set output % for upper limit for OT2
+#define MAX_OT2 25 // Set output % for upper limit for OT2
 
 #define MIN_IO3 5   // Set output % for lower limit for IO3.  0% power will always be available
 #define MAX_IO3 70 // Set output % for upper limit for IO3
@@ -172,7 +172,7 @@
 ////////////////////
 // Debugging Options
 // Useful for debugging only -- leave inactive otherwise
-//#define MEMORY_CHK
+#define MEMORY_CHK
 
 // This turns on the "# xxxxxxx\n" acknowledgements after commands
  #define ACKS_ON
