@@ -83,7 +83,7 @@
 ////////////////////
 // Duty Cycle Adjustment Increment
 // Used for rounding/increment for analogue inputs and power UP/DOWN commands
-#define DUTY_STEP 1 // Use 1, 2, 4, 5, or 10.
+#define DUTY_STEP 2 // Use 1, 2, 4, 5, or 10.
 
 ////////////////////
 // Physical input channel for RoR display on LCD
@@ -108,8 +108,8 @@
 #define MIN_OT1 0   // Set output % for lower limit for OT1.  0% power will always be available
 #define MAX_OT1 60 // Set output % for upper limit for OT1
 
-#define MIN_OT2 0   // Set output % for lower limit for OT2.  0% power will always be available
-#define MAX_OT2 25 // Set output % for upper limit for OT2
+#define MIN_OT2 5   // Set output % for lower limit for OT2.  0% power will always be available
+#define MAX_OT2 40 // Set output % for upper limit for OT2
 
 #define MIN_IO3 5   // Set output % for lower limit for IO3.  0% power will always be available
 #define MAX_IO3 70 // Set output % for upper limit for IO3
@@ -140,7 +140,7 @@
 // or other roasters where BT might be jumpy, then a higher value of RISE_FILTER
 // will be needed.  Theoretical max. is 99%, but watch out for the lag when
 // you get above 95%.
-#define RISE_FILTER 85 // heavy filtering on non-displayed BT for RoR calculations
+#define RISE_FILTER 50 // heavy filtering on non-displayed BT for RoR calculations
 #define ROR_FILTER 80  // post-filtering for the computed RoR values
 
 // Thermocouple inputs
@@ -175,7 +175,7 @@
 #define MEMORY_CHK
 
 // This turns on the "# xxxxxxx\n" acknowledgements after commands
- #define ACKS_ON
+#define ACKS_ON
 
 ////////////////////
 // Output Pin Setup
