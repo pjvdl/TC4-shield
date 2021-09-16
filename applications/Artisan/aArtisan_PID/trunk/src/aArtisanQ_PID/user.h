@@ -104,18 +104,24 @@
 #define NUM_PROFILES 2 // number of profiles stored in EEPROM
 
 ////////////////////
-// Heater and Fan Limits/Options
+// Heater Limits
 #define MIN_OT1 0   // Set output % for lower limit for OT1.  0% power will always be available
 #define MAX_OT1 60 // Set output % for upper limit for OT1
 
+// Fan Limits/Options
 #define MIN_OT2 5   // Set output % for lower limit for OT2.  0% power will always be available
-#define MAX_OT2 40 // Set output % for upper limit for OT2
+#define MAX_OT2 60 // Set output % for upper limit for OT2
 
+// IO3 not used
 #define MIN_IO3 5   // Set output % for lower limit for IO3.  0% power will always be available
 #define MAX_IO3 70 // Set output % for upper limit for IO3
 
 // cut power to Heater if fan duty is less than HTR_CUTOFF_FAN_VAL (to protect heater in air roaster). Set to 0 for no cutoff
 #define HTR_CUTOFF_FAN_VAL 0
+
+// reduce power to Heater if chamber (input) temperature exceeds this
+// Max heater duty is HTR_SAFETY_CUTOFF_TEMP - current_temp
+#define HTR_SAFETY_CUTOFF_TEMP 370
 
  // Ramp heater so that heat % cannot exceed linear relationship to fan given by:
  // Max heat % = HTR_CUTOFF_FAN_RAMP * Fan % + HTR_MAX_AT_FAN_0
@@ -193,7 +199,7 @@
 
 #ifdef CONFIG_PAC2_IO3HTR
 #define PHASE_ANGLE_CONTROL // phase angle control for OT2(fan) and ICC control for OT1(heater)
-#define IO3_HTR_PAC         // use PWM (3.922kHz) out on IO3 for heater in PHASE ANGLE CONTROL mode
+// #define IO3_HTR_PAC         // use PWM (3.922kHz) out on IO3 for heater in PHASE ANGLE CONTROL mode
 // zero cross detector (ZCD) connected to I/O2
 #define EXT_INT 0 // interrupt 0
 #define INT_PIN 2 // pin 2

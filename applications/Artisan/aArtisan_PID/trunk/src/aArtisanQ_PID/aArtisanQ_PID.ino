@@ -218,6 +218,7 @@ int32_t ftemps_old[NC]; // for calculating derivative
 int32_t ftimes_old[NC]; // for calculating derivative
 float RoR[NC];          // final RoR values
 uint8_t actv[NC];       // identifies channel status, 0 = inactive, n = physical channel + 1
+boolean temp_safety_active = false;
 
 #ifdef CELSIUS // only affects startup conditions
 boolean Cscale = true;
@@ -271,6 +272,8 @@ int times[2], temps[2]; // time and temp values read from EEPROM for setpoint ca
 char profile_CorF; // profile temps stored as Centigrade or Fahrenheit
 
 #endif
+
+uint8_t getHeaterDuty(int new_heater_duty = HEATER_DUTY);
 
 uint32_t counter;        // second counter
 uint32_t next_loop_time; //
@@ -733,7 +736,15 @@ void updateLCD()
     lcd.print(F("HTR:"));
     sprintf(st1, "%4d", (int)getHeaterDuty());
     lcd.print(st1);
-    lcd.print(F("%"));
+    if (temp_safety_active)
+    {
+      lcd.print(F("%S"));
+    }
+    else
+    {
+      lcd.print(F("% "));
+    }
+
 #endif // end ifdef PID_CONTROL \
        //#endif // end ifdef ANALOGUE1
 
@@ -1193,39 +1204,15 @@ void outOT1()
   uint8_t new_levelot1;
 #ifdef PHASE_ANGLE_CONTROL
 #ifdef IO3_HTR_PAC // OT1 not cutoff by fan duty in IO3_HTR_PAC mode
-  new_levelot1 = levelOT1;
+  new_levelot1 = getHeaterDuty(levelOT1);
 #else
-  if (HTR_CUTOFF_FAN_RAMP)
-  {
-    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
-    new_levelot1 = min(levelOT1, maxHeaterDuty);
-  }
-  else if (levelOT2 < HTR_CUTOFF_FAN_VAL)
-  {
-    new_levelot1 = 0;
-  }
-  else
-  {
-    new_levelot1 = levelOT1;
-  }
+  new_levelot1 = getHeaterDuty(levelOT1);
 #endif
   output_level_icc(new_levelot1);
   Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
   Serial.println(new_levelot1);
 #else // PWM Mode
-  if (HTR_CUTOFF_FAN_RAMP)
-  {
-    int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
-    new_levelot1 = min(levelOT1, maxHeaterDuty);
-  }
-  else if (levelIO3 < HTR_CUTOFF_FAN_VAL)
-  {
-    new_levelot1 = 0;
-  }
-  else
-  {
-    new_levelot1 = levelOT1;
-  }
+  new_levelot1 = getHeaterDuty(levelOT1);
   ssr.Out(new_levelot1, levelOT2);
   Serial.print(F("Setting HEATER_DUTY PWM (OT1) to "));
   Serial.println(new_levelot1);
@@ -1265,18 +1252,35 @@ void outOT2()
 }
 
 #if (!defined(CONFIG_PAC3)) // completely disable outIO3 if using CONFIG_PAC3 mode (uses IO3 for interrupt)
-uint8_t getHeaterDuty()
+uint8_t getHeaterDuty(int new_heater_duty)
 {
+  int heaterDuty = new_heater_duty;
+  if (HTR_SAFETY_CUTOFF_TEMP)
+  {
+    int current_temp = convertUnits(T[PID_CHAN]); // T[0] is the environmental temperature
+    heaterDuty = max(0, min(heaterDuty, (float) HTR_SAFETY_CUTOFF_TEMP - current_temp));
+    temp_safety_active = (heaterDuty != new_heater_duty);
+    // Serial.print(F("HTR_SAFETY_CUTOFF_TEMP = "));
+    // Serial.println((float) HTR_SAFETY_CUTOFF_TEMP);
+    // Serial.print(F("Current ET = "));
+    // Serial.println(current_temp);
+    // Serial.print(F("heaterDuty = "));
+    // Serial.println(heaterDuty);    
+  }
+
   if (HTR_CUTOFF_FAN_RAMP)
   {
     int maxHeaterDuty = FAN_DUTY * (float) HTR_CUTOFF_FAN_RAMP + HTR_MAX_AT_FAN_0;
-    return min(HEATER_DUTY, maxHeaterDuty);
+    heaterDuty = min(heaterDuty, maxHeaterDuty);
   }
+
   if (FAN_DUTY < HTR_CUTOFF_FAN_VAL)
   { // send 0 if OT1 has been cut off
     return 0;
   }
-  return HEATER_DUTY;
+  // Serial.print(F("heaterDuty = "));
+  // Serial.println(heaterDuty);    
+  return heaterDuty;
 }
 
 // ----------------------------------
@@ -1751,6 +1755,7 @@ void loop()
   if (ACdetect())
   {
     digitalWrite(LED_PIN, HIGH); // illuminate the Arduino IDE if ZCD is sending a signal
+    Serial.println(F("AC Active"));
   }
   else
   {
@@ -1812,6 +1817,8 @@ void loop()
     Serial.println(levelOT1);
 #endif
   }
+#else
+  outOT1(); // force refresh of heater on OT1
 #endif
 
 // Update LCD if defined
