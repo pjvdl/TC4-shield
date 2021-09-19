@@ -37,7 +37,7 @@
 
 // Version 1.10
 
-#include "cmndreader.h"
+#include "./cmndreader.h"
 
 // define command objects (all are derived from CmndBase)
 readCmnd reader;
@@ -309,7 +309,7 @@ boolean ot1Cmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "DOWN") == 0)
     {
       levelOT1 = levelOT1 - DUTY_STEP;
-      if (levelOT1 < MIN_OT1 & levelOT1 != 0)
+      if ((levelOT1 < MIN_OT1) && (levelOT1 != 0))
         levelOT1 = 0; // turn ot1 off if trying to go below minimum. or use levelOT1 = MIN_HTR ?
       outOT1();
 #ifdef ACKS_ON
@@ -326,7 +326,7 @@ boolean ot1Cmnd::doCommand(CmndParser *pars)
         levelOT1 = atoi(pars->paramStr(1));
         if (levelOT1 > MAX_OT1)
           levelOT1 = MAX_OT1; // don't allow OT1 to exceed maximum
-        if (levelOT1 < MIN_OT1 & levelOT1 != 0)
+        if ((levelOT1 < MIN_OT1) && (levelOT1 != 0))
           levelOT1 = MIN_OT1; // don't allow to set less than minimum unless setting to zero
         outOT1();
 #ifdef ACKS_ON
@@ -373,7 +373,7 @@ boolean ot2Cmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "DOWN") == 0)
     {
       levelOT2 = levelOT2 - DUTY_STEP;
-      if (levelOT2 < MIN_OT2 & levelOT2 != 0)
+      if ((levelOT2 < MIN_OT2) && (levelOT2 != 0))
         levelOT2 = 0; // turn off if selecting less than minimum. or use levelOT2 = MIN_FAN ?
       outOT2();
 #ifdef ACKS_ON
@@ -390,7 +390,7 @@ boolean ot2Cmnd::doCommand(CmndParser *pars)
         levelOT2 = atoi(pars->paramStr(1));
         if (levelOT2 > MAX_OT2)
           levelOT2 = levelOT2; // don't allow OT2 to exceed maximum
-        if (levelOT2 < MIN_OT2 & levelOT2 != 0)
+        if ((levelOT2 < MIN_OT2) && (levelOT2 != 0))
           levelOT2 = MIN_OT2; // don't allow to set less than minimum unless setting to zero
         outOT2();
 #ifdef ACKS_ON
@@ -581,10 +581,7 @@ boolean unitsCmnd::doCommand(CmndParser *pars)
       return true;
     }
   }
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 #ifdef PID_CONTROL
@@ -598,7 +595,7 @@ pidCmnd::pidCmnd() : CmndBase(PID_CMD)
 void pidCmnd::pidON()
 {
   Output = 0; // turn PID output off, otherwise Iterm accumulates (this looks like a bug in Brett's code)
-  myPID.SetMode(AUTOMATIC);
+  myPID.SetMode(QuickPID::AUTOMATIC);
 #ifdef ACKS_ON
   Serial.println(F("# PID turned ON"));
 #endif
@@ -608,8 +605,9 @@ void pidCmnd::pidON()
 void pidCmnd::pidOFF()
 {
   Output = 0; // to make sure Iterm is not accumulated
-  myPID.SetMode(MANUAL);
+  myPID.SetMode(QuickPID::MANUAL);
   outOT1();
+  outOT2();
 #ifdef ACKS_ON
   Serial.println(F("# PID turned OFF"));
 #endif
@@ -621,7 +619,7 @@ void pidCmnd::pidOFF()
 boolean pidCmnd::doCommand(CmndParser *pars)
 {
   if (strcmp(keyword, pars->cmndName()) == 0)
-  {
+    {
     if (strcmp(pars->paramStr(1), "ON") == 0)
     {
 #ifdef PID_CONTROL
@@ -648,7 +646,7 @@ boolean pidCmnd::doCommand(CmndParser *pars)
     {
 #ifdef PID_CONTROL
       counter = 0;      // reset TC4 timer
-      myPID.SetMode(1); // turn PID on
+      pidON();
 #ifdef ACKS_ON
       Serial.println(F("# PID Roast Start"));
 #endif
@@ -658,7 +656,7 @@ boolean pidCmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "STOP") == 0)
     {
 #ifdef PID_CONTROL
-      myPID.SetMode(0); // turn PID off
+      pidOFF();
 #ifdef PHASE_ANGLE_CONTROL
 #ifdef IO3_HTR_PAC
       levelIO3 = 0;
@@ -705,12 +703,15 @@ boolean pidCmnd::doCommand(CmndParser *pars)
       kd = atof(pars->paramStr(4));
       if (strcmp(pars->paramStr(1), "T_POM") == 0)
       {
-        myPID.SetTunings(kp, ki, kd, P_ON_M); // Proportional on Measurement
+        POn = 1.0;
+        DOn = 0.0;
       }
       else
       {
-        myPID.SetTunings(kp, ki, kd, P_ON_E); // Proportional on Error
+        POn = 0.0;
+        DOn = 0.0;
       }
+      myPID.SetTunings(kp, ki, kd, POn, DOn);
 #ifdef ACKS_ON
       Serial.print(F("# PID Tunings set.  "));
       Serial.print(F("Kp = "));
@@ -735,7 +736,7 @@ boolean pidCmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "CT") == 0)
     {
       uint16_t ct = atof(pars->paramStr(2));
-      myPID.SetSampleTime(ct);
+      myPID.SetSampleTimeUs(ct * 1000); // convert to micro seconds
 //looptime = ct;
 #ifdef ACKS_ON
       Serial.print(F("# PID cycle (ms) = "));
@@ -766,10 +767,7 @@ boolean pidCmnd::doCommand(CmndParser *pars)
       return true;
     }
   }
-  else
-  {
-    return false;
-  }
+  return false;
 }
 #endif
 
@@ -807,10 +805,7 @@ boolean filtCmnd::doCommand(CmndParser *pars)
     }     // end for
     return true;
   } // end if FILT
-  else
-  {
-    return false;
-  }
+  return false;
 }
 
 // ----------------------------- resetCmnd

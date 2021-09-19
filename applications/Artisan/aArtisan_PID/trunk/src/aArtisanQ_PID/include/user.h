@@ -21,9 +21,9 @@
 ////////////////////
 // Base configurations (leave only one uncommented)
 //#define CONFIG_PWM // slow PWM on OT1 (heater); fast PWM output (3.922kHz) on IO3 (DC fan); ZCD not required
-#define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
+// #define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
 //#define CONFIG_PAC2_IO3HTR // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 reserved for fast PWM output for heater
-//#define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO3 reads the req'd ZCD; IO3 not available for output
+#define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO3 reads the req'd ZCD; IO3 not available for output
 
 ////////////////////
 // Temperature Unit
@@ -35,8 +35,8 @@
 //#define LCDAPTER // if the I2C LCDapter board is to be used
 //#define LCD_I2C // if using a $5 delivered Chinese LCD with I2C module
 //#define LCD_PARALLEL // if using a parallel LCD screen
-#define OLED_I2C
-#define LCD_8x16
+// #define OLED_I2C
+// #define LCD_8x16
 
 //#define LCD_4x20 // if using a 4x20 LCD instead of a 2x16
 
@@ -92,14 +92,14 @@
 
 ////////////////////
 // PID Control Options
-//#define PID_CONTROL
+#define PID_CONTROL
 #define PID_CHAN 1 // physical channel for PID input (corresponding to thermocouple inputs T1-T4)
-#define CT 1000    // default cycle time for the PID, in ms
+#define CT 1000000    // default cycle time for the PID, in micro seconds
 #define PRO 0.80   // initial proportional parameter
 #define INT 0.003   // initial integral parameter
 #define DER 0.40   // initial derivative parameter
 
-//#define POM // enable Proportional on Measurement (NOTE: PID PARAMETERS WILL REQUIRE CHANGING). Disable for Proportional on Error.
+#define POM // enable Proportional on Measurement (NOTE: PID PARAMETERS WILL REQUIRE CHANGING). Disable for Proportional on Error.
 
 #define NUM_PROFILES 2 // number of profiles stored in EEPROM
 
@@ -178,7 +178,8 @@
 ////////////////////
 // Debugging Options
 // Useful for debugging only -- leave inactive otherwise
-#define MEMORY_CHK
+// #define MEMORY_CHK
+// #define DEBUG
 
 // This turns on the "# xxxxxxx\n" acknowledgements after commands
 #define ACKS_ON

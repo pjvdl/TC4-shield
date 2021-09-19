@@ -1,28 +1,72 @@
+//
+// !!! WARNING !!! AUTO-GENERATED FILE!
+// PLEASE DO NOT MODIFY IT AND USE "platformio.ini":
+// https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags
+//
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "PlatformIO",
             "includePath": [
-                "/home/paul/Downloads/arduino-1.8.12/tools/**",
-                "/home/paul/Downloads/arduino-1.8.12/hardware/tools/**",
-                "/home/paul/Downloads/arduino-1.8.12/hardware/arduino/avr/**",
-                "/home/paul/Arduino/libraries/**",
-                "${workspaceFolder}/**",
-                "/media/data/home/paul/bin/arduino-1.8.13/hardware/arduino/avr/**",
-                "/media/data/home/paul/bin/arduino-1.8.13/tools/**",
-                "/media/data/home/paul/bin/arduino-1.8.13/hardware/tools/**",
-                "/media/data/home/paul/bin/arduino-1.8.13/libraries/**"
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/include",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/src",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/QuickPID/src",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/thermocouple",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/mcEEPROM",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/cmndproc",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/cADC",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/PWM16",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/U8g2/src",
+                "/home/paul/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                "/home/paul/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/avr-debugger/avr8-stub",
+                "/home/paul/.platformio/packages/framework-arduino-avr/cores/arduino",
+                "/home/paul/.platformio/packages/framework-arduino-avr/variants/standard",
+                "/home/paul/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                "/home/paul/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                "/home/paul/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                "/home/paul/.platformio/packages/tool-unity",
+                ""
             ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/include",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/src",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/QuickPID/src",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/thermocouple",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/mcEEPROM",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/cmndproc",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/cADC",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/lib/PWM16",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/U8g2/src",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/libraries/Wire/src",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/libraries/SPI/src",
+                    "/home/paul/workspace/tc4-shield/applications/Artisan/aArtisan_PID/trunk/src/aArtisanQ_PID/.pio/libdeps/uno/avr-debugger/avr8-stub",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/cores/arduino",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/variants/standard",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/libraries/EEPROM/src",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/libraries/HID/src",
+                    "/home/paul/.platformio/packages/framework-arduino-avr/libraries/SoftwareSerial/src",
+                    "/home/paul/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
             "defines": [
-                "USBCON"
+                "PLATFORMIO=50200",
+                "ARDUINO_AVR_UNO",
+                "F_CPU=16000000L",
+                "ARDUINO_ARCH_AVR",
+                "ARDUINO=10808",
+                "__AVR_ATmega328P__",
+                ""
             ],
-            "compilerPath": "/usr/bin/gcc",
-            "cStandard": "gnu11",
-            "cppStandard": "gnu++14",
-            "intelliSenseMode": "${default}",
-            "forcedInclude": [
-                "/home/paul/Downloads/arduino-1.8.12/hardware/arduino/avr/cores/arduino/Arduino.h",
-                "/media/data/home/paul/bin/arduino-1.8.13/hardware/arduino/avr/cores/arduino/Arduino.h"
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/home/paul/.platformio/packages/toolchain-atmelavr/bin/avr-gcc",
+            "compilerArgs": [
+                "-mmcu=atmega328p",
+                ""
             ]
         }
     ],

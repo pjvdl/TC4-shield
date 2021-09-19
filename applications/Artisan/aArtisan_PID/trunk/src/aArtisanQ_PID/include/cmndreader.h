@@ -49,7 +49,7 @@
 
 #include "user.h"
 #ifdef PID_CONTROL
-#include "PID_v1.h"
+#include "QuickPID.h"
 #endif
 
 #include "phase_ctrl.h"
@@ -135,17 +135,19 @@ extern void logger();
 extern boolean Cscale;
 extern uint8_t actv[NC];
 #ifdef PID_CONTROL
-extern double Setpoint;
-extern PID myPID;
+extern float Setpoint;
+extern float POn;
+extern float DOn;
+extern QuickPID myPID;
 #endif
-extern uint32_t counter;
+extern double counter;
 extern int profile_number;
 extern void setProfile();
 //extern boolean pBourbon;
 //extern boolean roastlogger;
 extern boolean artisan_logger;
-extern double SV;
-extern double Output;
+extern float SV;
+extern float Output;
 extern uint8_t pid_chan;
 extern filterRC fT[NC]; // filters for logged ET, BT
 extern void outOT1();

@@ -155,8 +155,8 @@
 //          Version 6_7 released
 
 #define BANNER_ARTISAN_1 "aArtisanQ_PID"
-#define BANNER_ARTISAN_2 "Version 6_8"
-#define BANNER_ARTISAN_3 "16 Mar 2021"
+#define BANNER_ARTISAN_2 "Version 6_9"
+#define BANNER_ARTISAN_3 "19 Sep 2021"
 
 // this library included with the arduino distribution
 #include <Wire.h>
@@ -164,6 +164,10 @@
 // The user.h file contains user-definable and some other global compiler options
 // It must be located in the same folder as aArtisan.pde
 #include "user.h"
+
+#ifdef DEBUG
+#include "avr8-stub.h"
+#endif
 
 // command processor declarations -- must be in same folder as aArtisan
 #include "cmndreader.h"
@@ -176,9 +180,9 @@
 #ifdef PHASE_ANGLE_CONTROL
 // code for integral cycle control and phase angle control
 #include "phase_ctrl.h"
-#endif
-
+#else
 #include <PWM16.h> // for SSR output
+#endif
 
 // these "contributed" libraries must be installed in your sketchbook's arduino/libraries folder
 #include <cmndproc.h>     // for command interpreter
@@ -248,17 +252,22 @@ boolean analogue2_changed;
 #endif
 
 #ifdef PID_CONTROL
-#include <PID_v1.h>
+// #include <PID_v1.h>
+#include <QuickPID.h>
 
 //Define PID Variables we'll be connecting to
-double Setpoint, Input, Output, SV; // SV is for roasting software override of Setpoint
+float Setpoint, Input, Output, SV; // SV is for roasting software override of Setpoint
+// double Setpoint, Input, Output, SV;
 
 //Specify the links and initial tuning parameters
 #ifdef POM
-PID myPID(&Input, &Output, &Setpoint, 2, 5, 1, P_ON_M, DIRECT);
+float POn = 1.0;   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
+float DOn = 0.0;   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
 #else
-PID myPID(&Input, &Output, &Setpoint, 2, 5, 1, P_ON_E, DIRECT);
+float POn = 0.0;   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
+float DOn = 0.0;   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
 #endif
+QuickPID myPID(&Input, &Output, &Setpoint, 2, 5, 1, POn, DOn, QuickPID::DIRECT);
 uint8_t pid_chan = PID_CHAN; // identify PV and set default value from user.h
 
 int profile_number; // number of the profile for PID control
@@ -267,7 +276,7 @@ char profile_name[40];
 char profile_description[80];
 int profile_number_new; // used when switching between profiles
 
-int times[2], temps[2]; // time and temp values read from EEPROM for setpoint calculation
+uint8_t times[2], temps[2]; // time and temp values read from EEPROM for setpoint calculation
 
 char profile_CorF; // profile temps stored as Centigrade or Fahrenheit
 
@@ -275,10 +284,10 @@ char profile_CorF; // profile temps stored as Centigrade or Fahrenheit
 
 uint8_t getHeaterDuty(int new_heater_duty = HEATER_DUTY);
 
-uint32_t counter;        // second counter
+double counter;        // second counter
 uint32_t next_loop_time; //
 boolean first;
-uint16_t looptime = 1000;
+uint16_t looptime = 300;
 
 // class objects
 cADC adc(A_ADC);      // MCP3424
@@ -317,7 +326,7 @@ int LCD_mode = 0;
 #ifdef LCDAPTER
 #include <cButton.h>
 cButtonPE16 buttons; // class object to manage button presses
-#define BACKLIGHT lcd.backlight();
+#define BACKLIGHT_LCD lcd.backlight();
 cLCD lcd; // I2C LCD interface
 #endif
 
@@ -325,17 +334,17 @@ cLCD lcd; // I2C LCD interface
 // Set the pins on the I2C chip used for LCD connections:
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // Set the LCD I2C address
-#define BACKLIGHT lcd.backlight();
+#define BACKLIGHT_LCD lcd.backlight();
 #endif
 
 #ifdef OLED_I2C
 //  U8G2_SSD1306_128X64_NONAME_F_SW_I2C lcd(U8G2_R0, /* clock=*/ SCL, /* data=*/ SDA, /* reset=*/ U8X8_PIN_NONE);   // All Boards without Reset of the Display
 U8X8_SSD1306_128X64_NONAME_HW_I2C lcd(/* clock=*/SCL, /* data=*/SDA, /* reset=*/U8X8_PIN_NONE); // OLEDs without Reset of the Display
-#define BACKLIGHT lcd.setPowerSave(0);                                                          // disable powersave
+#define BACKLIGHT_OLED lcd.setPowerSave(0);                                                          // disable powersave
 #endif
 
 #ifdef LCD_PARALLEL
-#define BACKLIGHT ;
+#define BACKLIGHT_LCD ;
 #define RS 2
 #define ENABLE 4
 #define D4 7
@@ -455,7 +464,7 @@ void logger()
   Serial.print(F(","));
   Serial.print(FAN_DUTY);
 #ifdef PID_CONTROL
-  if (myPID.GetMode() != MANUAL)
+  if (myPID.GetMode() != QuickPID::MANUAL)
   { // If PID in AUTOMATIC mode
     Serial.print(F(","));
     Serial.print(Setpoint);
@@ -540,7 +549,7 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
   int32_t v;
   tcBase *tc;
   float tempF;
-  int32_t itemp;
+  // int32_t itemp;
   float rx;
 
   uint16_t dly = amb.getConvTime(); // use delay based on slowest conversion
@@ -567,6 +576,7 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
       ftimes[k] = millis(); // record timestamp for RoR calculations
 
       amb.readSensor();                             // retrieve value from ambient temp register
+
       v = adc.readuV();                             // retrieve microvolt sample from MCP3424
       tempF = tc->Temp_F(0.001 * v, amb.getAmbF()); // convert uV to Celsius
 
@@ -583,6 +593,15 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
         rx = calcRise(ftemps_old[k], ftemps[k], ftimes_old[k], ftimes[k]);
         RoR[k] = fRoR[k].doFilter(rx / D_MULT) * D_MULT; // perform post-filtering on RoR values
       }
+
+      // char log[100];
+      // sprintf(log, "Temp[%d]: %")
+      // Serial.print(F("Temp: "));
+      // Serial.print(F("Temp: "));
+      // Serial.print(F("Temp: "));
+      // Serial.print(F("Temp: "));
+      // Serial.print(F("Temp: "));
+      
     }
   }
   first = false;
@@ -609,13 +628,10 @@ void updateLCD()
   { // Display normal LCD screen
 
     lcdSetCursor(0, 0);
-    if (counter / 60 < 10)
-      lcd.print(F("0"));
-    lcd.print(counter / 60); // Prob can do this better. Check aBourbon.
-    lcd.print(F(":"));       // make this blink?? :)
-    if (counter - (counter / 60) * 60 < 10)
-      lcd.print(F("0"));
-    lcd.print(counter - (counter / 60) * 60);
+    char time_str[12];
+    uint16_t counter_milli = (int) ((counter - (int) counter) * 1000);
+    sprintf(time_str, "%02d:%02d.%02d", (int)(counter / 60), (int) counter, counter_milli / 10);
+    lcd.print(time_str);
 
 #if defined LCD_4x20 || defined LCD_8x16
 
@@ -689,7 +705,7 @@ void updateLCD()
 //     lcd.print(st1);
 
 #ifdef PID_CONTROL
-    if (myPID.GetMode() != MANUAL)
+    if (myPID.GetMode() != QuickPID::MANUAL)
     { // if PID is on then display PID: nnn% instead of OT1:
       lcdSetCursor(0, 2);
       lcd.print(F("PID:"));
@@ -722,7 +738,7 @@ void updateLCD()
 
 //#ifdef ANALOGUE1
 #ifdef PID_CONTROL
-    if (myPID.GetMode() == MANUAL)
+    if (myPID.GetMode() == QuickPID::MANUAL)
     { // only display OT2: nnn% if PID is off so PID display isn't overwriten
       lcdSetCursor(0, 2);
       lcd.print(F("HTR:"));
@@ -793,7 +809,7 @@ void updateLCD()
     }
 
 #ifdef PID_CONTROL
-    if (myPID.GetMode() != MANUAL)
+    if (myPID.GetMode() != QuickPID::MANUAL)
     {
       lcdSetCursor(0, 1);
       sprintf(st1, "%3d", (int)getHeaterDuty());
@@ -955,7 +971,7 @@ int32_t getAnalogValue(uint8_t port)
 // ---------------------------------
 void readAnlg1()
 { // read analog port 1 and adjust OT1 output
-  char pstr[5];
+  // char pstr[5];
   int32_t reading;
   reading = getAnalogValue(anlg1);
   if (reading <= 100 && reading != old_reading_anlg1)
@@ -966,19 +982,19 @@ void readAnlg1()
 #ifdef IO3_HTR_PAC
     levelIO3 = reading;
     outIO3();
-    Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));
-    Serial.println(levelIO3, DEC);
+    // Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));
+    // Serial.println(levelIO3, DEC);
 #else
     levelOT1 = reading;
     outOT1();
-    Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
-    Serial.println(levelOT1, DEC);
+    // Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
+    // Serial.println(levelOT1, DEC);
 #endif
 #else // PWM Mode
     levelOT1 = reading;
     outOT1();
-    Serial.print(F("Updating OT1 (heater PWM) with new analogue value "));
-    Serial.println(levelOT1, DEC);
+    // Serial.print(F("Updating OT1 (heater PWM) with new analogue value "));
+    // Serial.println(levelOT1, DEC);
 #endif
   }
   else
@@ -992,22 +1008,22 @@ void readAnlg1()
 // ---------------------------------
 void readAnlg2()
 { // read analog port 2 and adjust OT2 output
-  char pstr[5];
+  // char pstr[5];
   int32_t reading;
   reading = getAnalogValue(anlg2);
-  if (reading <= 100 && reading != old_reading_anlg2)
+  if ((reading <= (int32_t) 100) && (reading != old_reading_anlg2))
   { // did it change?
     analogue2_changed = true;
     old_reading_anlg2 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
     levelOT2 = reading;
-    Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
-    Serial.println(levelOT2, DEC);
+    // Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
+    // Serial.println(levelOT2, DEC);
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
-    Serial.print(F("Updating IO3 (fan PWM) with new analogue value "));
-    Serial.println(levelIO3, DEC);
+    // Serial.print(F("Updating IO3 (fan PWM) with new analogue value "));
+    // Serial.println(levelIO3, DEC);
     outIO3(); // update fan output on IO3
 #endif
   }
@@ -1025,7 +1041,7 @@ void updateSetpoint()
 
   if (profile_number > 0)
   {
-    while (counter < times[0] || counter >= times[1])
+    while ((counter < times[0]) || (counter >= times[1]))
     { // if current time outside currently loaded interval then adjust profile pointer before reading new interval data from EEPROM
       if (counter < times[0])
       {
@@ -1042,7 +1058,7 @@ void updateSetpoint()
       if (times[1] == 0)
       {
         Setpoint = 0;
-        myPID.SetMode(MANUAL); // deactivate PID control
+        myPID.SetMode(QuickPID::MANUAL); // deactivate PID control
         Output = 0;            // set PID output to 0
         break;
       }
@@ -1050,11 +1066,11 @@ void updateSetpoint()
 
     float x = (float)(counter - times[0]) / (float)(times[1] - times[0]); // can probably be tidied up?? Calcs proportion of time through current profile interval
     Setpoint = temps[0] + x * (temps[1] - temps[0]);                      // then applies the proportion to the temps
-    if (profile_CorF == 'F' && Cscale)
+    if ((profile_CorF == 'F') && (Cscale))
     {                                    // make setpoint units match current units
       Setpoint = convertUnits(Setpoint); // convert F to C
     }
-    else if (profile_CorF == 'C' & !Cscale)
+    else if ((profile_CorF == 'C') && (!Cscale))
     {                                   // make setpoint units match current units
       Setpoint = Setpoint * 9 / 5 + 32; // convert C to F
     }
@@ -1114,19 +1130,19 @@ void checkButtons()
       if (buttons.keyPressed(0) && buttons.keyChanged(0))
       { // button 1 - PID on/off - PREVIOUS PROFILE
 #ifdef PID_CONTROL
-        if (myPID.GetMode() == MANUAL)
+        if (myPID.GetMode() == QuickPID::MANUAL)
         {
-          myPID.SetMode(AUTOMATIC);
+          myPID.SetMode(QuickPID::AUTOMATIC);
         }
         else
         {
-          myPID.SetMode(MANUAL);
+          myPID.SetMode(QuickPID::MANUAL);
         }
 #endif
       }
       else if (buttons.keyPressed(1) && buttons.keyChanged(1))
       { // button 2 - RESET TIMER - NEXT PROFILE
-        counter = 0;
+        counter = 0.0;
       }
       else if (buttons.keyPressed(2) && buttons.keyChanged(2))
       { // button 3 - ENTER BUTTON
@@ -1209,13 +1225,13 @@ void outOT1()
   new_levelot1 = getHeaterDuty(levelOT1);
 #endif
   output_level_icc(new_levelot1);
-  Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
-  Serial.println(new_levelot1);
+  // Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
+  // Serial.println(new_levelot1);
 #else // PWM Mode
   new_levelot1 = getHeaterDuty(levelOT1);
   ssr.Out(new_levelot1, levelOT2);
-  Serial.print(F("Setting HEATER_DUTY PWM (OT1) to "));
-  Serial.println(new_levelot1);
+  // Serial.print(F("Setting HEATER_DUTY PWM (OT1) to "));
+  // Serial.println(new_levelot1);
 #endif
 }
 
@@ -1251,7 +1267,6 @@ void outOT2()
 #endif
 }
 
-#if (!defined(CONFIG_PAC3)) // completely disable outIO3 if using CONFIG_PAC3 mode (uses IO3 for interrupt)
 uint8_t getHeaterDuty(int new_heater_duty)
 {
   int heaterDuty = new_heater_duty;
@@ -1283,6 +1298,7 @@ uint8_t getHeaterDuty(int new_heater_duty)
   return heaterDuty;
 }
 
+#if (!defined(CONFIG_PAC3)) // completely disable outIO3 if using CONFIG_PAC3 mode (uses IO3 for interrupt)
 // ----------------------------------
 void outIO3()
 { // update output for IO3
@@ -1368,7 +1384,7 @@ void checkButtonPins()
         switch (LCD_mode)
         {
         case 0:
-          counter = 0;
+          counter = 0.0;
           break;
         case 1:
 #ifdef PID_CONTROL
@@ -1410,13 +1426,13 @@ void checkButtonPins()
         {
         case 0:
 #ifdef PID_CONTROL
-          if (myPID.GetMode() == MANUAL)
+          if (myPID.GetMode() == QuickPID::MANUAL)
           {
-            myPID.SetMode(AUTOMATIC);
+            myPID.SetMode(QuickPID::AUTOMATIC);
           }
           else
           {
-            myPID.SetMode(MANUAL);
+            myPID.SetMode(QuickPID::MANUAL);
           }
 #endif
           break;
@@ -1545,14 +1561,19 @@ void blinkInternalLed()
 
 void setup()
 {
+#ifdef DEBUG
+  debug_init();
+#endif
+
   delay(100);
   pinMode(LED_PIN, OUTPUT);
   blinkInternalLed();
 
   Wire.begin();
   Serial.begin(BAUD);
-  amb.init(AMB_FILTER); // initialize ambient temp filtering
-
+  amb.init(AMB_FILTER, AMB_CONV_CONT); // initialize ambient temp filtering
+  amb.setCfg(AMB_BITS_10);
+  
   blinkInternalLed();
 
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
@@ -1562,15 +1583,16 @@ void setup()
   // lcd.setFont(u8x8_font_8x13_1x2_f);
   lcd.setFont(u8x8_font_artossans8_r);
   lcd.setPowerSave(0);
+  BACKLIGHT_OLED;
 #else
 #ifdef LCD_4x20
   lcd.begin(20, 4);
 #else
   lcd.begin(16, 2);
 #endif // LCD_4x20
+  BACKLIGHT_LCD;
 #endif // OLED_I2C
 
-  BACKLIGHT;
   lcdSetCursor(0, 0);
   lcd.print(BANNER_ARTISAN_1); // display version banner
   lcdSetCursor(0, 1);
@@ -1601,6 +1623,7 @@ delay(3000);
   Serial.println(freeMemory());
 #endif
 
+  adc.setCfg(ADC_BITS_14, ADC_GAIN_8, ADC_CONV_CONT);
   adc.setCal(CAL_GAIN, UV_OFFSET);
   amb.setOffset(AMB_OFFSET);
 
@@ -1689,7 +1712,10 @@ delay(3000);
   // Update all outputs to initialise to correct values
   outOT1();
   outOT2();
+
+#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC is active and 3 is the int pin
   outIO3();
+#endif
 
 #if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
   dcfan.init();                                       // initialize conditions for dcfan
@@ -1706,19 +1732,15 @@ delay(3000);
 #endif
 
 #ifdef PID_CONTROL
-  myPID.SetSampleTime(CT); // set sample time to 1 second
+  myPID.SetSampleTimeUs(CT); // set sample time to 1 second
 #ifdef IO3_HTR_PAC
   myPID.SetOutputLimits(MIN_IO3, MAX_IO3); // set output limits to user defined limits
 #else
   myPID.SetOutputLimits(MIN_OT1, MAX_OT1); // set output limits to user defined limits
 #endif
-  myPID.SetControllerDirection(DIRECT); // set PID to be direct acting mode. Increase in output leads to increase in input
-#ifdef POM
-  myPID.SetTunings(PRO, INT, DER, P_ON_M); // set initial PID tuning values and set Proportional on Measurement mode
-#else
-  myPID.SetTunings(PRO, INT, DER, P_ON_E); // set initial PID tuning values and set Proportional on Error mode
-#endif
-  myPID.SetMode(MANUAL); // start with PID control off
+  myPID.SetControllerDirection(QuickPID::DIRECT); // set PID to be direct acting mode. Increase in output leads to increase in input
+  myPID.SetTunings(PRO, INT, DER, POn, DOn); // set initial PID tuning values and set 
+  myPID.SetMode(QuickPID::MANUAL); // start with PID control off
 #if not(defined ROASTLOGGER || defined ARTISAN || defined ANDROID)
   profile_number = 1; // set default profile, 0 is for override by roasting software
 #else
@@ -1742,7 +1764,7 @@ delay(3000);
 #endif
 
   first = true;
-  counter = 3;                          // start counter at 3 to match with Artisan. Probably a better way to sync with Artisan???
+  counter = 3.0;                          // start counter at 3 to match with Artisan. Probably a better way to sync with Artisan???
   next_loop_time = millis() + looptime; // needed??
 }
 
@@ -1750,6 +1772,7 @@ delay(3000);
 void loop()
 {
     //blinkInternalLed();
+  Serial.println(F("New loop")); // how much time spare in loop. approx 350ms
 
 #ifdef PHASE_ANGLE_CONTROL
   if (ACdetect())
@@ -1781,7 +1804,7 @@ void loop()
 // Read analogue POT values if defined
 #ifdef ANALOGUE1
 #ifdef PID_CONTROL
-  if (myPID.GetMode() == MANUAL)
+  if (myPID.GetMode() == QuickPID::MANUAL)
     readAnlg1(); // if PID is off allow ANLG1 read
 #else
   readAnlg1();                             // if PID_CONTROL is not defined always allow ANLG1 read
@@ -1793,7 +1816,7 @@ void loop()
 
 // Run PID if defined and active
 #ifdef PID_CONTROL
-  if (myPID.GetMode() != MANUAL)
+  if (myPID.GetMode() != QuickPID::MANUAL)
   {                       // If PID in AUTOMATIC mode calc new output and assign to OT1
     updateSetpoint();     // read profile data from EEPROM and calculate new setpoint
     uint8_t k = pid_chan; // k = physical channel
@@ -1832,12 +1855,12 @@ void loop()
 #endif
 
   // check if temp reads has taken longer than looptime. If so add 1 to counter + increase next looptime
-  // Serial.println( next_loop_time - millis() ); // how much time spare in loop. approx 350ms
+  Serial.print(F("Next loop time: "));
+  Serial.println( next_loop_time ); // how much time spare in loop. approx 350ms
+  // Serial.println( millis() ); // how much time spare in loop. approx 350ms
   if (millis() > next_loop_time)
   {
-    counter = counter + (looptime / 1000);
-    if (counter > 3599)
-      counter = 3599;
+    counter = counter + ((float) looptime / 1000.0);
     next_loop_time = next_loop_time + looptime; // add time until next loop
   }
 
@@ -1855,9 +1878,10 @@ void loop()
 #endif
   }
 
+  // Serial.print(F("Loop end time: "));
+  // Serial.println( millis() ); // how much time spare in loop. approx 350ms
+
   // Set next loop time and increment counter
   next_loop_time = next_loop_time + looptime; // add time until next loop
-  counter = counter + (looptime / 1000);
-  if (counter > 3599)
-    counter = 3599;
+  counter = counter + ((float) looptime / 1000.0 );
 }
