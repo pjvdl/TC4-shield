@@ -46,7 +46,7 @@ dwriteCmnd dwriter;
 chanCmnd chan;
 ot1Cmnd ot1;
 ot2Cmnd ot2;
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 io3Cmnd io3;
 dcfanCmnd dcfan;
 #endif
@@ -407,7 +407,7 @@ boolean ot2Cmnd::doCommand(CmndParser *pars)
   }
 }
 
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC is active and 3 is the int pin
+#ifndef CONFIG_PAC3 // disable when PAC is active and 3 is the int pin
 
 // ----------------------------- io3Cmnd
 // constructor
@@ -473,7 +473,7 @@ boolean io3Cmnd::doCommand(CmndParser *pars)
 }
 #endif
 
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 
 // ----------------------------- dcfanCmnd
 // constructor

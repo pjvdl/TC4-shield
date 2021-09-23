@@ -61,7 +61,7 @@
 #define CHAN_CMD "CHAN"   // maps logical channels to physical channels
 #define OT1_CMD "OT1"     // 0 to 100 percent output on SSR drive OT1
 #define OT2_CMD "OT2"     // 0 to 100 percent output on SSR drive OT2
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 #define IO3_CMD "IO3"     // 0 to 100 percent PWM 5V output on IO3
 #define DCFAN_CMD "DCFAN" // 0 to 100 percent PWM 5V output on IO3, with slew rate checks
 #endif
@@ -90,7 +90,7 @@ class readCmnd;
 class chanCmnd;
 class ot1Cmnd;
 class ot2Cmnd;
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 class io3Cmnd;
 class dcfanCmnd;
 #endif
@@ -111,7 +111,7 @@ extern dwriteCmnd dwriter;
 extern chanCmnd chan;
 extern ot1Cmnd ot1;
 extern ot2Cmnd ot2;
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 extern io3Cmnd io3;
 extern dcfanCmnd dcfan;
 #endif
@@ -196,7 +196,7 @@ public:
   virtual boolean doCommand(CmndParser *pars);
 };
 
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3)
+#ifndef CONFIG_PAC3
 class io3Cmnd : public CmndBase
 {
 public:

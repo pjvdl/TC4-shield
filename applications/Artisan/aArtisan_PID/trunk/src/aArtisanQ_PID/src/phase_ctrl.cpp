@@ -182,8 +182,8 @@ void output_level_pac( uint8_t pac_level ) {
   else
     pac_output = pac_level;
 
-  // Serial.print(F("output_level_pac "));
-  // Serial.println(pac_output);
+  Serial.print(F("output_level_pac "));
+  Serial.println(pac_output);
 }
 
 // call this to set integral cycle control output levels, 0 to 100 

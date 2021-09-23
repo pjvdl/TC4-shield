@@ -42,8 +42,8 @@
 //#define LCDAPTER // if the I2C LCDapter board is to be used
 //#define LCD_I2C // if using a $5 delivered Chinese LCD with I2C module
 //#define LCD_PARALLEL // if using a parallel LCD screen
-#define OLED_I2C
-#define LCD_8x16
+// #define OLED_I2C
+// #define LCD_8x16
 
 //#define LCD_4x20 // if using a 4x20 LCD instead of a 2x16
 

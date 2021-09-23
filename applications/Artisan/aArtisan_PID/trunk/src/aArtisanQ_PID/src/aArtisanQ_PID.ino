@@ -232,7 +232,7 @@ boolean temp_safety_active = false;
 #endif
 
 int levelOT1, levelOT2; // parameters to control output levels
-#if !(defined PHASE_ANGLE_CONTROL && (INT_PIN == 3))
+#ifndef CONFIG_PAC3
 int levelIO3;
 #endif
 
@@ -423,7 +423,7 @@ void checkStatus(uint32_t ms)
   while (millis() < tod + ms)
   {
     checkSerial();
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
+#ifndef CONFIG_PAC3 // disable when PAC active and pin 3 reads the ZCD
     dcfan.slew_fan();                                 // keep the fan smoothly increasing in speed
 #endif
 #ifdef LCDAPTER
@@ -967,7 +967,7 @@ void readAnlg1()
     analogue1_changed = true;
     old_reading_anlg1 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
-#if !(defined PHASE_ANGLE_CONTROL && (INT_PIN == 3))
+#ifndef CONFIG_PAC3
     levelIO3 = reading;
     outIO3();
     // Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));
@@ -975,8 +975,8 @@ void readAnlg1()
 #else
     levelOT1 = reading;
     outOT1();
-    // Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
-    // Serial.println(levelOT1, DEC);
+    Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
+    Serial.println(levelOT1, DEC);
 #endif
 #else // PWM Mode
     levelOT1 = reading;
@@ -1005,8 +1005,8 @@ void readAnlg2()
     old_reading_anlg2 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
     levelOT2 = reading;
-    // Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
-    // Serial.println(levelOT2, DEC);
+    Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
+    Serial.println(levelOT2, DEC);
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
@@ -1214,8 +1214,8 @@ void outOT1()
   new_levelot1 = getHeaterDuty(levelOT1);
 #endif
   output_level_icc(new_levelot1);
-  // Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
-  // Serial.println(new_levelot1);
+  Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
+  Serial.println(new_levelot1);
 #else // PWM Mode
   new_levelot1 = getHeaterDuty(levelOT1);
   ssr.Out(new_levelot1, levelOT2);
@@ -1643,7 +1643,7 @@ void setup()
 
   // set up output on OT1 and OT2 and IO3
   levelOT1 = levelOT2 = 0;
-#if !(defined PHASE_ANGLE_CONTROL && (INT_PIN == 3))
+#ifndef CONFIG_PAC3
   levelIO3 = 0;
 #endif
 #ifndef PHASE_ANGLE_CONTROL
@@ -1683,7 +1683,7 @@ void setup()
   ci.addCommand(&awriter);
   ci.addCommand(&units);
   ci.addCommand(&chan);
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
+#ifndef CONFIG_PAC3 // disable when PAC active and pin 3 reads the ZCD
   ci.addCommand(&io3);
   ci.addCommand(&dcfan);
 #endif
@@ -1706,11 +1706,11 @@ void setup()
   outOT1();
   outOT2();
 
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC is active and 3 is the int pin
+#ifndef CONFIG_PAC3 // disable when PAC is active and 3 is the int pin
   outIO3();
 #endif
 
-#if (!defined(PHASE_ANGLE_CONTROL)) || (INT_PIN != 3) // disable when PAC active and pin 3 reads the ZCD
+#ifndef CONFIG_PAC3 // disable when PAC active and pin 3 reads the ZCD
   dcfan.init();                                       // initialize conditions for dcfan
 #endif
 
@@ -1775,17 +1775,18 @@ void loop()
   // Serial.print(F("New loop at time ")); // how much time spare in loop. approx 350ms
   // Serial.println(current_time);
   
-// #ifdef PHASE_ANGLE_CONTROL
-//   if (ACdetect())
-//   {
-//     digitalWrite(LED_PIN, HIGH); // illuminate the Arduino IDE if ZCD is sending a signal
-//     Serial.println(F("AC Active"));
-//   }
-//   else
-//   {
-//     digitalWrite(LED_PIN, LOW);
-//   }
-// #endif
+#ifdef PHASE_ANGLE_CONTROL
+  // check for AC signal and enable PAC if present
+  if (ACdetect())
+  {
+    digitalWrite(LED_PIN, HIGH); // illuminate the Arduino IDE if ZCD is sending a signal
+    Serial.println(F("AC Active"));
+  }
+  else
+  {
+    digitalWrite(LED_PIN, LOW);
+  }
+#endif
 #ifdef MEMORY_CHK
   current_time = millis();
   if (current_time - checktime > 1000)
