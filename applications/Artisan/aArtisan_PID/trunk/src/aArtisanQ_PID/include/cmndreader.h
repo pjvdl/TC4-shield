@@ -40,6 +40,8 @@
 #ifndef CMNDREADER_H
 #define CMNDREADER_H
 
+#include "user.h"
+
 #include <cmndproc.h>
 #ifndef PHASE_ANGLE_CONTROL
 #include <PWM16.h>
@@ -47,7 +49,6 @@
 
 #include <cADC.h>
 
-#include "user.h"
 #ifdef PID_CONTROL
 #include "QuickPID.h"
 #endif
@@ -132,12 +133,9 @@ extern int levelOT1;
 extern int levelOT2;
 extern int levelIO3;
 extern void logger();
-extern boolean Cscale;
 extern uint8_t actv[NC];
 #ifdef PID_CONTROL
 extern float Setpoint;
-extern float POn;
-extern float DOn;
 extern QuickPID myPID;
 #endif
 extern double counter;

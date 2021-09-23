@@ -12,6 +12,12 @@
 #define USER_H
 
 ////////////////////
+// Debugging Options
+// Useful for debugging only -- leave inactive otherwise
+#define MEMORY_CHK
+// #define DEBUG
+
+////////////////////
 // Roasting software
 // Comment out all if using TC4 stand alone
 //#define ROASTLOGGER
@@ -21,26 +27,28 @@
 ////////////////////
 // Base configurations (leave only one uncommented)
 //#define CONFIG_PWM // slow PWM on OT1 (heater); fast PWM output (3.922kHz) on IO3 (DC fan); ZCD not required
-// #define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
+#define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
 //#define CONFIG_PAC2_IO3HTR // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 reserved for fast PWM output for heater
-#define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO3 reads the req'd ZCD; IO3 not available for output
+// #define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 not available for output
 
 ////////////////////
 // Temperature Unit
 #define CELSIUS // controls only the initial conditions.  Comment out for F.
 
+#ifndef DEBUG
 ////////////////////
 // LCD Options
 // Choose ONE of the following LCD options if using an LCD
 //#define LCDAPTER // if the I2C LCDapter board is to be used
 //#define LCD_I2C // if using a $5 delivered Chinese LCD with I2C module
 //#define LCD_PARALLEL // if using a parallel LCD screen
-// #define OLED_I2C
-// #define LCD_8x16
+#define OLED_I2C
+#define LCD_8x16
 
 //#define LCD_4x20 // if using a 4x20 LCD instead of a 2x16
 
 #define LCD_I2C_ADDRESS 0x27 // adjust I2C address for LCD if required. Try 0x3F, 0x20. Not used for LCDapter.
+#endif
 
 /////////////////////
 // Input Button Options
@@ -100,8 +108,16 @@
 #define DER 0.40   // initial derivative parameter
 
 #define POM // enable Proportional on Measurement (NOTE: PID PARAMETERS WILL REQUIRE CHANGING). Disable for Proportional on Error.
+#ifdef POM
+#define P_ON 1.0   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
+#define D_ON 0.0   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
+#else
+#define P_ON 0.0   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
+#define D_ON 0.0   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
+#endif
 
 #define NUM_PROFILES 2 // number of profiles stored in EEPROM
+
 
 ////////////////////
 // Heater Limits
@@ -175,12 +191,6 @@
 //#define TIME_BASE 6 // approx. 2.2kHz
 //#define TIME_BASE 3 // approx. 3.9kHz
 
-////////////////////
-// Debugging Options
-// Useful for debugging only -- leave inactive otherwise
-// #define MEMORY_CHK
-// #define DEBUG
-
 // This turns on the "# xxxxxxx\n" acknowledgements after commands
 #define ACKS_ON
 
@@ -216,8 +226,9 @@
 #ifdef CONFIG_PAC3
 #define PHASE_ANGLE_CONTROL // phase angle control for OT2(fan) and ICC control for OT1(heater)
 // zero cross detector (ZCD) connected to I/O3
-#define EXT_INT 1 // interrupt 1
-#define INT_PIN 3
+// PvdL. Change to the same as CONFIG_PAC2 with fast PWM on I03
+#define EXT_INT 0 // interrupt 0
+#define INT_PIN 2
 #endif
 
 ////////////////////

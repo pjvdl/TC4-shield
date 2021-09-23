@@ -441,7 +441,7 @@ boolean io3Cmnd::doCommand(CmndParser *pars)
     else if (strcmp(pars->paramStr(1), "DOWN") == 0)
     {
       levelIO3 = levelIO3 - DUTY_STEP;
-      if (levelIO3 < MIN_IO3 & levelIO3 != 0)
+      if ((levelIO3 < MIN_IO3) & (levelIO3 != 0))
         levelIO3 = 0; // turn IO3 off if trying to go below minimum.
       outIO3();
 #ifdef ACKS_ON
@@ -564,22 +564,23 @@ boolean unitsCmnd::doCommand(CmndParser *pars)
 {
   if (strcmp(keyword, pars->cmndName()) == 0)
   {
-    if (strcmp(pars->paramStr(1), "F") == 0)
-    {
-      Cscale = false;
-#ifdef ACKS_ON
-      Serial.println(F("# Changed units to F"));
-#endif
-      return true;
-    }
-    else if (strcmp(pars->paramStr(1), "C") == 0)
-    {
-      Cscale = true;
-#ifdef ACKS_ON
-      Serial.println(F("# Changed units to C"));
-#endif
-      return true;
-    }
+//     if (strcmp(pars->paramStr(1), "F") == 0)
+//     {
+//       Cscale = false;
+// #ifdef ACKS_ON
+//       Serial.println(F("# Changed units to F"));
+// #endif
+//       return true;
+//     }
+//     else if (strcmp(pars->paramStr(1), "C") == 0)
+//     {
+//       Cscale = true;
+// #ifdef ACKS_ON
+//       Serial.println(F("# Changed units to C"));
+// #endif
+    //   return true;
+    // }
+    return true;
   }
   return false;
 }
@@ -701,17 +702,17 @@ boolean pidCmnd::doCommand(CmndParser *pars)
       kp = atof(pars->paramStr(2));
       ki = atof(pars->paramStr(3));
       kd = atof(pars->paramStr(4));
-      if (strcmp(pars->paramStr(1), "T_POM") == 0)
-      {
-        POn = 1.0;
-        DOn = 0.0;
-      }
-      else
-      {
-        POn = 0.0;
-        DOn = 0.0;
-      }
-      myPID.SetTunings(kp, ki, kd, POn, DOn);
+      // if (strcmp(pars->paramStr(1), "T_POM") == 0)
+      // {
+      //   POn = 1.0;
+      //   DOn = 0.0;
+      // }
+      // else
+      // {
+      //   POn = 0.0;
+      //   DOn = 0.0;
+      // }
+      myPID.SetTunings(kp, ki, kd, P_ON, D_ON);
 #ifdef ACKS_ON
       Serial.print(F("# PID Tunings set.  "));
       Serial.print(F("Kp = "));
@@ -728,8 +729,8 @@ boolean pidCmnd::doCommand(CmndParser *pars)
     {
       SV = atof(pars->paramStr(2));
 #if defined ACKS_ON && defined PID_CONTROL
-      Serial.print(F("# PID setpoint = DO NOT KNOW!"));
-      Serial.println(Setpoint);
+      Serial.print(F("# PID setpoint = "));
+      Serial.println(SV);
 #endif
       return true;
     }

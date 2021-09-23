@@ -167,6 +167,7 @@
 
 #ifdef DEBUG
 #include "avr8-stub.h"
+// #include "SerialDummy.h"
 #endif
 
 // command processor declarations -- must be in same folder as aArtisan
@@ -225,9 +226,9 @@ uint8_t actv[NC];       // identifies channel status, 0 = inactive, n = physical
 boolean temp_safety_active = false;
 
 #ifdef CELSIUS // only affects startup conditions
-boolean Cscale = true;
+#define Cscale true
 #else
-boolean Cscale = false;
+#define Cscale false
 #endif
 
 int levelOT1, levelOT2; // parameters to control output levels
@@ -240,13 +241,13 @@ uint32_t checktime;
 #endif
 
 #ifdef ANALOGUE1
-uint8_t anlg1 = 0;         // analog input pins
+#define anlg1 0         // analog input pins
 int32_t old_reading_anlg1; // previous analogue reading
 boolean analogue1_changed;
 #endif
 
 #ifdef ANALOGUE2
-uint8_t anlg2 = 1;         // analog input pins
+#define anlg2 1         // analog input pins
 int32_t old_reading_anlg2; // previous analogue reading
 boolean analogue2_changed;
 #endif
@@ -260,20 +261,13 @@ float Setpoint, Input, Output, SV; // SV is for roasting software override of Se
 // double Setpoint, Input, Output, SV;
 
 //Specify the links and initial tuning parameters
-#ifdef POM
-float POn = 1.0;   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
-float DOn = 0.0;   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
-#else
-float POn = 0.0;   // proportional on Error to Measurement ratio (0.0-1.0), default = 1.0
-float DOn = 0.0;   // derivative on Error to Measurement ratio (0.0-1.0), default = 0.0
-#endif
-QuickPID myPID(&Input, &Output, &Setpoint, 2, 5, 1, POn, DOn, QuickPID::DIRECT);
+QuickPID myPID(&Input, &Output, &Setpoint, 2, 5, 1, P_ON, D_ON, QuickPID::DIRECT);
 uint8_t pid_chan = PID_CHAN; // identify PV and set default value from user.h
 
 int profile_number; // number of the profile for PID control
 int profile_ptr;    // EEPROM pointer for profile data
 char profile_name[40];
-char profile_description[80];
+char profile_description[40];
 int profile_number_new; // used when switching between profiles
 
 uint8_t times[2], temps[2]; // time and temp values read from EEPROM for setpoint calculation
@@ -286,8 +280,9 @@ uint8_t getHeaterDuty(int new_heater_duty = HEATER_DUTY);
 
 double counter;        // second counter
 uint32_t next_loop_time; //
+uint32_t current_time;
 boolean first;
-uint16_t looptime = 300;
+uint32_t looptime = 350;
 
 // class objects
 cADC adc(A_ADC);      // MCP3424
@@ -320,7 +315,7 @@ TC_TYPE4 tc4;
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
 // LCD output strings
 char st1[6], st2[6];
-int LCD_mode = 0;
+#define LCD_mode 0
 #endif
 
 #ifdef LCDAPTER
@@ -334,7 +329,9 @@ cLCD lcd; // I2C LCD interface
 // Set the pins on the I2C chip used for LCD connections:
 //                    addr, en,rw,rs,d4,d5,d6,d7,bl,blpol
 LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); // Set the LCD I2C address
+#ifndef BACKLIGHT_LCD
 #define BACKLIGHT_LCD lcd.backlight();
+#endif
 #endif
 
 #ifdef OLED_I2C
@@ -375,6 +372,15 @@ unsigned long lastDebounceTimeENTER_BUTTON = 0;
 int buttonStateENTER_BUTTON;            // the current reading from the input pin
 int lastButtonStateENTER_BUTTON = HIGH; // the previous reading from the input pin
 #endif
+
+// ----------------------------------------------------
+float convertUnits(float t)
+{
+  if (Cscale)
+    return F_TO_C(t);
+  else
+    return t;
+}
 
 // --------------------------------------------- end LCD interface
 
@@ -429,15 +435,6 @@ void checkStatus(uint32_t ms)
     checkButtonPins();
 #endif
   }
-}
-
-// ----------------------------------------------------
-float convertUnits(float t)
-{
-  if (Cscale)
-    return F_TO_C(t);
-  else
-    return t;
 }
 
 // ------------------------------------------------------------------
@@ -593,15 +590,6 @@ void get_samples() // this function talks to the amb sensor and ADC via I2C
         rx = calcRise(ftemps_old[k], ftemps[k], ftimes_old[k], ftimes[k]);
         RoR[k] = fRoR[k].doFilter(rx / D_MULT) * D_MULT; // perform post-filtering on RoR values
       }
-
-      // char log[100];
-      // sprintf(log, "Temp[%d]: %")
-      // Serial.print(F("Temp: "));
-      // Serial.print(F("Temp: "));
-      // Serial.print(F("Temp: "));
-      // Serial.print(F("Temp: "));
-      // Serial.print(F("Temp: "));
-      
     }
   }
   first = false;
@@ -630,7 +618,7 @@ void updateLCD()
     lcdSetCursor(0, 0);
     char time_str[12];
     uint16_t counter_milli = (int) ((counter - (int) counter) * 1000);
-    sprintf(time_str, "%02d:%02d.%02d", (int)(counter / 60), (int) counter, counter_milli / 10);
+    sprintf(time_str, "%02d:%02d.%02d", (int)(counter / 60), ((int) counter) % 60, counter_milli / 10);
     lcd.print(time_str);
 
 #if defined LCD_4x20 || defined LCD_8x16
@@ -761,8 +749,8 @@ void updateLCD()
       lcd.print(F("% "));
     }
 
-#endif // end ifdef PID_CONTROL \
-       //#endif // end ifdef ANALOGUE1
+#endif // end ifdef PID_CONTROL
+//#endif // end ifdef ANALOGUE1
 
     //#ifdef ANALOGUE2
     lcdSetCursor(0, 3);
@@ -979,7 +967,7 @@ void readAnlg1()
     analogue1_changed = true;
     old_reading_anlg1 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
-#ifdef IO3_HTR_PAC
+#if defined(IO3_HTR_PAC) || defined(CONFIG_PAC3)
     levelIO3 = reading;
     outIO3();
     // Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));
@@ -1081,6 +1069,20 @@ void updateSetpoint()
   }
 }
 
+void getProfileDescription(int pn)
+{ // read profile name and description data from eeprom
+
+  if (profile_number > 0)
+  {
+    int pp = 1024 + (400 * (pn - 1)) + 5;                            // 1024 = start of profile storage in EEPROM. 400 = size of each profile. 5 = location of profile name
+    eeprom.read(pp, (uint8_t *)&profile_name, sizeof(profile_name)); // read profile name
+
+    pp = 1024 + (400 * (pn - 1)) + 45;                                             // 1024 = start of profile storage in EEPROM. 400 = size of each profile. 45 = location of profile description
+    eeprom.read(pp, (uint8_t *)&profile_description, sizeof(profile_description)); // read profile name
+  }
+  //else //do something?
+}
+
 void setProfile()
 { // set profile pointer and read initial profile data
 
@@ -1100,19 +1102,6 @@ void setProfile()
   //else //do something?
 }
 
-void getProfileDescription(int pn)
-{ // read profile name and description data from eeprom
-
-  if (profile_number > 0)
-  {
-    int pp = 1024 + (400 * (pn - 1)) + 5;                            // 1024 = start of profile storage in EEPROM. 400 = size of each profile. 5 = location of profile name
-    eeprom.read(pp, (uint8_t *)&profile_name, sizeof(profile_name)); // read profile name
-
-    pp = 1024 + (400 * (pn - 1)) + 45;                                             // 1024 = start of profile storage in EEPROM. 400 = size of each profile. 45 = location of profile description
-    eeprom.read(pp, (uint8_t *)&profile_description, sizeof(profile_description)); // read profile name
-  }
-  //else //do something?
-}
 #endif // end ifdef PID_CONTROL
 
 #ifdef LCDAPTER
@@ -1573,9 +1562,10 @@ void setup()
   Serial.begin(BAUD);
   amb.init(AMB_FILTER, AMB_CONV_CONT); // initialize ambient temp filtering
   amb.setCfg(AMB_BITS_10);
-  
-  blinkInternalLed();
+  // Serial.println("Setting up ...");
 
+  blinkInternalLed();
+  
 #if defined LCD_PARALLEL || defined LCDAPTER || defined LCD_I2C || defined OLED_I2C
 #ifdef OLED_I2C
   lcd.begin();
@@ -1609,10 +1599,11 @@ void setup()
 #ifdef ROASTLOGGER
   lcd.print(F("ROASTLOGGER")); // display version banner
 #endif                         // ROASTLOGGER
-delay(3000);
+  delay(3000);
 #endif // LCD
 
 #ifdef LCDAPTER
+  // Serial.println("Reading buttons");
   buttons.begin(4);
   buttons.readButtons();
   buttons.ledAllOff();
@@ -1623,6 +1614,7 @@ delay(3000);
   Serial.println(freeMemory());
 #endif
 
+  // Serial.println("Configuring MCP3424 and ambient");
   adc.setCfg(ADC_BITS_14, ADC_GAIN_8, ADC_CONV_CONT);
   adc.setCal(CAL_GAIN, UV_OFFSET);
   amb.setOffset(AMB_OFFSET);
@@ -1710,6 +1702,7 @@ delay(3000);
   ci.addCommand(&filt);
 
   // Update all outputs to initialise to correct values
+  // Serial.println("Initialise OT1 and OT2");
   outOT1();
   outOT2();
 
@@ -1739,7 +1732,7 @@ delay(3000);
   myPID.SetOutputLimits(MIN_OT1, MAX_OT1); // set output limits to user defined limits
 #endif
   myPID.SetControllerDirection(QuickPID::DIRECT); // set PID to be direct acting mode. Increase in output leads to increase in input
-  myPID.SetTunings(PRO, INT, DER, POn, DOn); // set initial PID tuning values and set 
+  myPID.SetTunings(PRO, INT, DER, P_ON, D_ON); // set initial PID tuning values and set 
   myPID.SetMode(QuickPID::MANUAL); // start with PID control off
 #if not(defined ROASTLOGGER || defined ARTISAN || defined ANDROID)
   profile_number = 1; // set default profile, 0 is for override by roasting software
@@ -1765,42 +1758,53 @@ delay(3000);
 
   first = true;
   counter = 3.0;                          // start counter at 3 to match with Artisan. Probably a better way to sync with Artisan???
-  next_loop_time = millis() + looptime; // needed??
+  Serial.println("Setup complete");
 }
 
 // -----------------------------------------------------------------
+// char log_message[80];
+
 void loop()
 {
-    //blinkInternalLed();
-  Serial.println(F("New loop")); // how much time spare in loop. approx 350ms
+  // Set next loop time and increment counter
+  current_time = millis();
+  next_loop_time = current_time + looptime; // add time until next loop
+  counter = counter + ((float) looptime / 1000.0 );
 
-#ifdef PHASE_ANGLE_CONTROL
-  if (ACdetect())
-  {
-    digitalWrite(LED_PIN, HIGH); // illuminate the Arduino IDE if ZCD is sending a signal
-    Serial.println(F("AC Active"));
-  }
-  else
-  {
-    digitalWrite(LED_PIN, LOW);
-  }
-#endif
+  blinkInternalLed();
+  // Serial.print(F("New loop at time ")); // how much time spare in loop. approx 350ms
+  // Serial.println(current_time);
+  
+// #ifdef PHASE_ANGLE_CONTROL
+//   if (ACdetect())
+//   {
+//     digitalWrite(LED_PIN, HIGH); // illuminate the Arduino IDE if ZCD is sending a signal
+//     Serial.println(F("AC Active"));
+//   }
+//   else
+//   {
+//     digitalWrite(LED_PIN, LOW);
+//   }
+// #endif
 #ifdef MEMORY_CHK
-  uint32_t now = millis();
-  if (now - checktime > 1000)
+  current_time = millis();
+  if (current_time - checktime > 1000)
   {
     Serial.print(F("# freeMemory()="));
     Serial.println(freeMemory());
-    checktime = now;
+    checktime = current_time;
   }
 #endif
 
   // Has a command been received?
+  // Serial.println(F("check serial")); // how much time spare in loop. approx 350ms
   checkSerial();
 
   // Read temperatures
+  // Serial.println(F("get samples")); // how much time spare in loop. approx 350ms
   get_samples();
 
+  // Serial.println(F("read analogue")); // how much time spare in loop. approx 350ms
 // Read analogue POT values if defined
 #ifdef ANALOGUE1
 #ifdef PID_CONTROL
@@ -1814,6 +1818,7 @@ void loop()
   readAnlg2();
 #endif
 
+  // Serial.println(F("PID control")); // how much time spare in loop. approx 350ms
 // Run PID if defined and active
 #ifdef PID_CONTROL
   if (myPID.GetMode() != QuickPID::MANUAL)
@@ -1854,20 +1859,18 @@ void loop()
   logger(); // send data every second to Roastlogger every loop (looptime)
 #endif
 
-  // check if temp reads has taken longer than looptime. If so add 1 to counter + increase next looptime
-  Serial.print(F("Next loop time: "));
-  Serial.println( next_loop_time ); // how much time spare in loop. approx 350ms
-  // Serial.println( millis() ); // how much time spare in loop. approx 350ms
-  if (millis() > next_loop_time)
+  uint32_t current_time = millis();
+  if (current_time - next_loop_time > 0)
   {
     counter = counter + ((float) looptime / 1000.0);
     next_loop_time = next_loop_time + looptime; // add time until next loop
   }
 
-  // wait until looptiom is expired. Check serial and buttons while waiting
-  while (millis() < next_loop_time)
+  // wait until looptime is expired. Check serial and buttons while waiting
+  while (current_time - next_loop_time < 0)
   {
-    checkSerial(); // Has a command been received?
+      checkSerial(); // Has a command been received?
+      current_time = millis();
 #ifdef LCDAPTER
 #if not(defined ROASTLOGGER || defined ARTISAN || defined ANDROID) // Stops buttons being read unless in standalone mode. Added to fix crash (due to low memory?).
     checkButtons();
@@ -1877,11 +1880,4 @@ void loop()
     checkButtonPins();
 #endif
   }
-
-  // Serial.print(F("Loop end time: "));
-  // Serial.println( millis() ); // how much time spare in loop. approx 350ms
-
-  // Set next loop time and increment counter
-  next_loop_time = next_loop_time + looptime; // add time until next loop
-  counter = counter + ((float) looptime / 1000.0 );
 }
