@@ -967,7 +967,7 @@ void readAnlg1()
     analogue1_changed = true;
     old_reading_anlg1 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
-#if defined(IO3_HTR_PAC) || defined(CONFIG_PAC3)
+#if !(defined PHASE_ANGLE_CONTROL && (INT_PIN == 3))
     levelIO3 = reading;
     outIO3();
     // Serial.print(F("Updating IO3 (heater PAC) with new analogue value "));

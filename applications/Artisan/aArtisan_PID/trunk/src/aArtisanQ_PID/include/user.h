@@ -27,9 +27,9 @@
 ////////////////////
 // Base configurations (leave only one uncommented)
 //#define CONFIG_PWM // slow PWM on OT1 (heater); fast PWM output (3.922kHz) on IO3 (DC fan); ZCD not required
-#define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
+// #define CONFIG_PAC2 // phase angle control on OT1 (heater) and OT2 (fan); IO2 used to read the ZCD
 //#define CONFIG_PAC2_IO3HTR // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 reserved for fast PWM output for heater
-// #define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 not available for output
+#define CONFIG_PAC3 // phase angle control on OT1 (heater) and OT2 (fan); IO2 reads the req'd ZCD; IO3 not available for output
 
 ////////////////////
 // Temperature Unit
@@ -227,8 +227,8 @@
 #define PHASE_ANGLE_CONTROL // phase angle control for OT2(fan) and ICC control for OT1(heater)
 // zero cross detector (ZCD) connected to I/O3
 // PvdL. Change to the same as CONFIG_PAC2 with fast PWM on I03
-#define EXT_INT 0 // interrupt 0
-#define INT_PIN 2
+#define EXT_INT 1 // interrupt 0
+#define INT_PIN 3
 #endif
 
 ////////////////////
