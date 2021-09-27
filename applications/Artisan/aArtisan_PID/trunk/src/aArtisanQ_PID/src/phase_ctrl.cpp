@@ -177,25 +177,31 @@ void output_level_pac( uint8_t pac_level ) {
  ///else {  // turn OT1 back on again if levelOT2 is above cutoff value. Might be a better way to handle this??
     ///output_level_icc( levelOT1 );    
   ///}
+
+  if (pac_level != pac_output) {
+    Serial.print(F("Updating FAN output_level_pac = "));
+    Serial.println(pac_output);
+  }
+
   if( pac_level > 100 ) // trap error condition
     pac_output = 0;
   else
     pac_output = pac_level;
-
-  Serial.print(F("output_level_pac "));
-  Serial.println(pac_output);
 }
 
 // call this to set integral cycle control output levels, 0 to 100 
 void output_level_icc( uint8_t icc_level ) {
+  if (icc_level != ratioN)
+  {
+    Serial.print(F("Updating HEATER output_level_icc = "));
+    Serial.println(ratioN);
+  }
+
   //if( FAN_DUTY < HTR_CUTOFF_FAN_VAL ) icc_level = 0;
   if( icc_level > 100 )
     ratioN = 0;
   else
     ratioN = icc_level;
-
-  // Serial.print(F("output_level_icc "));
-  // Serial.println(ratioN);
 
   newN = true;  // tell the interrupt routine to restart sequence
 }

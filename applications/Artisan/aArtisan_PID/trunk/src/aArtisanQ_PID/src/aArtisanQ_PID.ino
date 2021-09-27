@@ -282,7 +282,7 @@ double counter;        // second counter
 uint32_t next_loop_time; //
 uint32_t current_time;
 boolean first;
-uint32_t looptime = 350;
+uint32_t looptime = 333;
 
 // class objects
 cADC adc(A_ADC);      // MCP3424
@@ -975,8 +975,8 @@ void readAnlg1()
 #else
     levelOT1 = reading;
     outOT1();
-    Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
-    Serial.println(levelOT1, DEC);
+    // Serial.print(F("Updating OT1 (heater PAC) with new analogue value "));
+    // Serial.println(levelOT1, DEC);
 #endif
 #else // PWM Mode
     levelOT1 = reading;
@@ -1005,8 +1005,8 @@ void readAnlg2()
     old_reading_anlg2 = reading; // save reading for next time
 #ifdef PHASE_ANGLE_CONTROL
     levelOT2 = reading;
-    Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
-    Serial.println(levelOT2, DEC);
+    // Serial.print(F("Updating OT2 (fan PAC) with new analogue value "));
+    // Serial.println(levelOT2, DEC);
     outOT2(); // update fan output on OT2
 #else         // PWM Mode
     levelIO3 = reading;
@@ -1214,8 +1214,8 @@ void outOT1()
   new_levelot1 = getHeaterDuty(levelOT1);
 #endif
   output_level_icc(new_levelot1);
-  Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
-  Serial.println(new_levelot1);
+  // Serial.print(F("Setting HEATER_DUTY ICC (OT1) to "));
+  // Serial.println(new_levelot1);
 #else // PWM Mode
   new_levelot1 = getHeaterDuty(levelOT1);
   ssr.Out(new_levelot1, levelOT2);
@@ -1861,15 +1861,25 @@ void loop()
 #endif
 
   uint32_t current_time = millis();
-  if (current_time - next_loop_time > 0)
+  if ((current_time - (double) next_loop_time) > 0)
   {
+    Serial.print(F("Loop time exceeded. Current time: "));
+    Serial.print(current_time);
+    Serial.print(F(" - Next loop time: "));
+    Serial.print(next_loop_time);
+    Serial.print(F(" = "));
+    Serial.println(current_time - (double) next_loop_time);
     counter = counter + ((float) looptime / 1000.0);
     next_loop_time = next_loop_time + looptime; // add time until next loop
   }
 
   // wait until looptime is expired. Check serial and buttons while waiting
-  while (current_time - next_loop_time < 0)
+  while ((current_time - (double) next_loop_time) < 0)
   {
+      // Serial.print(F("Check serial. Current time: "));
+      // Serial.print(current_time);
+      // Serial.print(F(". Next loop time: "));
+      // Serial.println(next_loop_time);
       checkSerial(); // Has a command been received?
       current_time = millis();
 #ifdef LCDAPTER
