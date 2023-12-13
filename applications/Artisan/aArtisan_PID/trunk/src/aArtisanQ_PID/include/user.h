@@ -137,7 +137,7 @@
 
 // reduce power to Heater if chamber (input) temperature exceeds this
 // Max heater duty is HTR_SAFETY_CUTOFF_TEMP - current_temp
-#define HTR_SAFETY_CUTOFF_TEMP 370
+#define HTR_SAFETY_CUTOFF_TEMP 400
 
  // Ramp heater so that heat % cannot exceed linear relationship to fan given by:
  // Max heat % = HTR_CUTOFF_FAN_RAMP * Fan % + HTR_MAX_AT_FAN_0
